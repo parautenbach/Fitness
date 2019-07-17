@@ -29,7 +29,10 @@ for point in points:
         elevations.append(point.elevation)
     point_prev = point
 
-butterworth_filter = signal.butter(5, 0.005)
+# walk: 0.05
+# run: 0.05
+# cycle: 0.01
+butterworth_filter = signal.butter(5, 0.05)
 elevations_filtered = signal.filtfilt(butterworth_filter[0], butterworth_filter[1], elevations)
 gradient = np.diff(elevations_filtered)
 zero_crossings = np.where(np.diff(np.sign(gradient)))[0]

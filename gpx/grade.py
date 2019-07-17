@@ -67,7 +67,7 @@ ax2.set_xlim(min(x), max(x))
 ax2.plot(x[:-1], gradient, 'm', label='Gradient')
 ax2.plot(x[zero_crossings], np.zeros(len(zero_crossings)), 'ko', label='Elevation changes')
 ax2.plot(x[:-1], np.array(grades), 'r', label='Stepped Grade')
-ax1.set_ylabel('Grade (%)')
+ax2.set_ylabel('Grade (%)')
 
 h1, l1 = ax1.get_legend_handles_labels()
 h2, l2 = ax2.get_legend_handles_labels()

@@ -50,16 +50,27 @@ for (idx, marker) in enumerate(markers[1:]):
     #print(grade)
 
 x = np.cumsum(distances)/1000
+
 plt.clf()
-plt.plot(x, elevations, 'g', 
-    x, elevations_filtered, 'b', 
-    x[:-1], gradient*100, 'm', 
-    x[zero_crossings], np.ones(len(zero_crossings)), 'ko',
-    x[:-1], np.array(grades)*100, 'r')
 plt.grid()
-plt.xlim(min(x), max(x))
-#plt.ylim(-2*max(elevations), 2*max(elevations))
-plt.xlabel('Distance (km)')
-plt.ylabel('Elevation / change (m)')
-plt.legend(['Raw elevation','Filtered elevation','Gradient','Elevation changes','Stepped Grade'], fontsize='x-small')
+
+ax1 = plt.gca()
+ax1.plot(x, elevations, 'g', label='Raw elevation')
+ax1.plot(x, elevations_filtered, 'b', label='Filtered elevation')
+ax1.set_xlim(min(x), max(x))
+ax1.set_ylim(0, 1.2*max(elevations))
+ax1.set_xlabel('Distance (km)')
+ax1.set_ylabel('Elevation / change (m)')
+
+ax2 = ax1.twinx()
+ax2.set_xlim(min(x), max(x))
+ax2.plot(x[:-1], gradient, 'm', label='Gradient')
+ax2.plot(x[zero_crossings], np.zeros(len(zero_crossings)), 'ko', label='Elevation changes')
+ax2.plot(x[:-1], np.array(grades), 'r', label='Stepped Grade')
+ax1.set_ylabel('Grade (%)')
+
+h1, l1 = ax1.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+ax1.legend(h1 + h2, l1 + l2, loc='upper right', fontsize='x-small')
+
 plt.savefig('output.png')

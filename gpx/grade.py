@@ -4,6 +4,7 @@ import matplotlib.pylab as plt
 import numpy as np
 import os.path
 import scipy.signal as signal
+import seaborn as sns
 
 from argparse import ArgumentParser
 from haversine import haversine
@@ -14,7 +15,6 @@ if __name__ == "__main__":
     parser.add_argument("-hr", "--heart-rate", dest="plot_heart_rate", action='store_true', help="generate a heart rate plot too")
     # TODO: specify time x-axis
     # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
-    # TODO: specify or extract activity type
     args = parser.parse_args()
 
     with open(args.filename, 'r') as input_file:
@@ -41,9 +41,20 @@ if __name__ == "__main__":
                     heart_rates.append(int(extension.text))
         point_prev = point
 
+    duration = gpx.get_moving_data().moving_time
+    distance = gpx.get_moving_data().moving_distance
+    average_speed = distance/duration
+    # TODO: smarter cut-off
+    # pace = 1/average_speed
+    # cut_off = pace/20
+    # print(cut_off)
+    # if average speed is roughly more than 15km/h then relax the filter cut-off to get smoother elevation data
     # walk/run: 0.05
     # cycle: 0.01 – cause it's faster
-    butterworth_filter = signal.butter(5, 0.01)
+    cut_off = 0.05
+    if average_speed >= 4.2:
+       cut_off = 0.01
+    butterworth_filter = signal.butter(5, cut_off)
     elevations_filtered = signal.filtfilt(butterworth_filter[0], butterworth_filter[1], elevations)
     gradient = np.diff(elevations_filtered)
     zero_crossings = np.where(np.diff(np.sign(gradient)))[0]
@@ -68,28 +79,36 @@ if __name__ == "__main__":
 
     x = np.cumsum(distances)/1000
 
+    # https://www.codecademy.com/articles/seaborn-design-i
+    sns.set_style(style="ticks", rc={'grid.linestyle': '--'})
+    sns.set_context(rc={"grid.linewidth": 0.3})
+    palette = sns.color_palette("deep")
+
     if args.plot_heart_rate and heart_rates:
         (f, (ax1, ax3)) = plt.subplots(2, 1, sharex=True)
     else:
         (f, ax1) = plt.subplots(1, 1, sharex=True)
 
-    ax1.plot(x, elevations, 'g', label='Raw elevation')
-    ax1.plot(x, elevations_filtered, 'b', label='Filtered elevation')
+    ax1.plot(x, elevations, color=palette[2], label='Raw elevation')
+    ax1.plot(x, elevations_filtered, color=palette[0], label='Filtered elevation')
     ax1.set_xlim(min(x), max(x))
     ax1.set_ylabel('Elevation / change (m)')
     ax1.grid()
 
     ax2 = ax1.twinx()
     ax2.set_xlim(min(x), max(x))
-    ax2.plot(x[:-1], np.array(grades), 'm', label='Stepped Grade')
+    ax2.plot(x[:-1], np.array(grades), color=palette[1], label='Stepped Grade')
     ax2.set_ylabel('Grade (%)')
     ax2.grid()
 
+    if args.plot_heart_rate and not heart_rates:
+        print("WARNING: Heart rate plot requested but no heart rate data could be found")
+
     if args.plot_heart_rate and heart_rates:
-        # TODO: plot avg heart rate too ('r') / make optional arg
         ax3.set_xlim(min(x), max(x))
+        # email me if you're alive if your heart rate exceeded 230 bpm
         ax3.set_ylim(0, 230)
-        ax3.plot(x[:-1], np.array(heart_rate_averages), 'r', label='Avg Heart Rate')
+        ax3.plot(x[:-1], np.array(heart_rate_averages), color=palette[3], label='Avg Heart Rate')
         ax3.set_xlabel('Distance (km)')
         ax3.set_ylabel('BPM')
         ax3.legend(loc='upper right', fontsize='xx-small')
@@ -99,7 +118,11 @@ if __name__ == "__main__":
     h2, l2 = ax2.get_legend_handles_labels()
     ax1.legend(h1 + h2, l1 + l2, loc='upper right', fontsize='x-small')
 
-    # TODO: specify filename
+    if track.name:
+        # TODO: track.get_time_bounds().start_time
+        f.suptitle(track.name)
+
     (input_basename, _) = os.path.splitext(os.path.basename(args.filename))
     output_filename = '.'.join([input_basename, "png"])
     plt.savefig(output_filename, dpi=300)
+    plt.close()

@@ -89,7 +89,8 @@ if __name__ == "__main__":
     else:
         (f, ax1) = plt.subplots(1, 1, sharex=True)
 
-    ax1.plot(x, elevations, color=palette[2], label='Raw elevation')
+    ax1.plot(x, elevations, color=palette[2], label='Raw elevation', fillstyle="bottom")
+    ax1.fill_between(x, elevations, 0, color=palette[2], alpha=0.5)
     ax1.plot(x, elevations_filtered, color=palette[0], label='Filtered elevation')
     ax1.set_xlim(min(x), max(x))
     ax1.set_ylabel('Elevation / change (m)')

@@ -91,8 +91,9 @@ if __name__ == "__main__":
 
     ax1.plot(x, elevations, color=palette[2], label='Raw elevation', fillstyle="bottom")
     ax1.fill_between(x, elevations, 0, color=palette[2], alpha=0.5)
-    ax1.plot(x, elevations_filtered, color=palette[0], label='Filtered elevation')
+    ax1.plot(x, elevations_filtered, color=palette[0], label='Smoothed elevation')
     ax1.set_xlim(min(x), max(x))
+    ax1.set_ylim(0, max(elevations)*1.2)
     ax1.set_ylabel('Elevation / change (m)')
     ax1.grid()
 
@@ -117,7 +118,7 @@ if __name__ == "__main__":
 
     h1, l1 = ax1.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
-    ax1.legend(h1 + h2, l1 + l2, loc='upper right', fontsize='x-small')
+    ax1.legend(h1 + h2, l1 + l2, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=3 , fontsize='xx-small')
 
     if track.name:
         # TODO: track.get_time_bounds().start_time

@@ -1,4 +1,4 @@
-#! /
+#!/bin/python
 # coding: utf-8
 
 import gpxpy
@@ -11,6 +11,14 @@ import seaborn as sns
 
 from argparse import ArgumentParser
 from haversine import haversine
+
+_GPX_HR_TAG = "hr"
+# percentage spacing above and below where required
+_PLOT_PADDING = 0.2
+_PLOT_DPI = 300
+# default cut-off for the filter
+_FILTER_DEFAULT_CUT_OFF = 0.03
+_FILTER_ORDER = 5
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -40,7 +48,7 @@ if __name__ == "__main__":
             elevations.append(point.elevation or elevations[-1])
         if point.extensions:
             for extension in point.extensions[0].getchildren():
-                if extension.tag[-2:] == 'hr':
+                if extension.tag[-2:] == _GPX_HR_TAG:
                     heart_rates.append(int(extension.text))
         point_prev = point
 
@@ -54,10 +62,10 @@ if __name__ == "__main__":
     # if average speed is roughly more than 15km/h then relax the filter cut-off to get smoother elevation data
     # walk/run: 0.05
     # cycle: 0.01 - cause it's faster
-    cut_off = 0.03
+    cut_off = _FILTER_DEFAULT_CUT_OFF
     #if average_speed >= 4.2:
     #   cut_off = 0.01
-    butterworth_filter = signal.butter(5, cut_off)
+    butterworth_filter = signal.butter(_FILTER_ORDER, cut_off)
     elevations_filtered = signal.filtfilt(butterworth_filter[0], butterworth_filter[1], elevations)
     gradient = np.diff(elevations_filtered)
     zero_crossings = np.where(np.diff(np.sign(gradient)))[0]
@@ -96,7 +104,7 @@ if __name__ == "__main__":
     ax1.fill_between(x, elevations, 0, color=palette[2], alpha=0.5)
     ax1.plot(x, elevations_filtered, color=palette[0], label='Smoothed Elevation')
     ax1.set_xlim(min(x), max(x))
-    ax1.set_ylim(0, max(elevations)*1.2)
+    ax1.set_ylim(0, max(elevations)*(1 + _PLOT_PADDING))
     ax1.set_ylabel('Elevation / change (m)')
     ax1.grid()
 
@@ -112,8 +120,8 @@ if __name__ == "__main__":
     if args.plot_heart_rate and heart_rates:
         ax3.set_xlim(min(x), max(x))
         # email me if you're alive if your heart rate exceeded 230 bpm
-        ax3.set_ylim(50, 230)
-        ax3.plot(x[:-1], np.array(heart_rate_averages), color=palette[3], label='Avg Heart Rate')
+        ax3.set_ylim(min(heart_rate_averages)*(1 - _PLOT_PADDING), max(heart_rate_averages)*(1 + _PLOT_PADDING))
+        ax3.plot(x[:-1], np.array(heart_rate_averages), color=palette[3], label='Average Heart Rate')
         ax3.set_xlabel('Distance (km)')
         ax3.set_ylabel('BPM')
         ax3.legend(loc='upper right', fontsize='xx-small')
@@ -129,5 +137,5 @@ if __name__ == "__main__":
 
     (input_basename, _) = os.path.splitext(os.path.basename(args.filename))
     output_filename = '.'.join([input_basename, "png"])
-    plt.savefig(output_filename, dpi=300)
+    plt.savefig(output_filename, dpi=_PLOT_DPI)
     plt.close()

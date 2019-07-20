@@ -1,4 +1,4 @@
-#!/Users/parautenbach/anaconda/bin/python
+#!/bin/python
 
 import gpxpy
 import gpxpy.gpx

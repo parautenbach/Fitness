@@ -119,7 +119,6 @@ if __name__ == "__main__":
 
     if args.plot_heart_rate and heart_rates:
         ax3.set_xlim(min(x), max(x))
-        # email me if you're alive if your heart rate exceeded 230 bpm
         ax3.set_ylim(min(heart_rate_averages)*(1 - _PLOT_PADDING), max(heart_rate_averages)*(1 + _PLOT_PADDING))
         ax3.plot(x[:-1], np.array(heart_rate_averages), color=palette[3], label='Average Heart Rate')
         ax3.set_xlabel('Distance (km)')
@@ -132,8 +131,8 @@ if __name__ == "__main__":
     ax1.legend(h1 + h2, l1 + l2, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=3 , fontsize='xx-small')
 
     if track.name:
-        # TODO: track.get_time_bounds().start_time + date
-        f.suptitle(track.name)
+        # TODO: time
+        f.suptitle("{} on {}".format(track.name.strip(), track.get_time_bounds().start_time.date()))
 
     (input_basename, _) = os.path.splitext(os.path.basename(args.filename))
     output_filename = '.'.join([input_basename, "png"])

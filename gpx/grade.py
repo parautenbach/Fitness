@@ -23,7 +23,7 @@ _FILTER_ORDER = 5
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-f", "--file", required=True, dest="filename", help="the GPX file to generate the plot for", metavar="FILE")
-    parser.add_argument("-hr", "--heart-rate", dest="plot_heart_rate", action='store_true', help="generate a heart rate plot too")
+    parser.add_argument("-hr", "--heart-rate", dest="plot_heart_rate", action="store_true", help="generate a heart rate plot too")
     # TODO: specify time x-axis
     # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
     args = parser.parse_args()
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     x = np.cumsum(distances)/1000
 
     # https://www.codecademy.com/articles/seaborn-design-i
-    sns.set_style(style="ticks", rc={'grid.linestyle': '--'})
+    sns.set_style(style="ticks", rc={"grid.linestyle": "--"})
     sns.set_context(rc={"grid.linewidth": 0.3})
     palette = sns.color_palette("deep")
 
@@ -100,18 +100,18 @@ if __name__ == "__main__":
     else:
         (f, ax1) = plt.subplots(1, 1, sharex=True)
 
-    ax1.plot(x, elevations, color=palette[2], label='Raw Elevation', fillstyle="bottom")
+    ax1.plot(x, elevations, color=palette[2], label="Raw Elevation", fillstyle="bottom")
     ax1.fill_between(x, elevations, 0, color=palette[2], alpha=0.5)
-    ax1.plot(x, elevations_filtered, color=palette[0], label='Smoothed Elevation')
+    ax1.plot(x, elevations_filtered, color=palette[0], label="Smoothed Elevation")
     ax1.set_xlim(min(x), max(x))
     ax1.set_ylim(0, max(elevations)*(1 + _PLOT_PADDING))
-    ax1.set_ylabel('Elevation / change (m)')
+    ax1.set_ylabel("Elevation / change (m)")
     ax1.grid()
 
     ax2 = ax1.twinx()
     ax2.set_xlim(min(x), max(x))
-    ax2.plot(x[:-1], np.array(grades), color=palette[1], label='Stepped Grade')
-    ax2.set_ylabel('Grade (%)')
+    ax2.plot(x[:-1], np.array(grades), color=palette[1], label="Stepped Grade")
+    ax2.set_ylabel("Grade (%)")
     ax2.grid()
 
     if args.plot_heart_rate and not heart_rates:
@@ -120,21 +120,21 @@ if __name__ == "__main__":
     if args.plot_heart_rate and heart_rates:
         ax3.set_xlim(min(x), max(x))
         ax3.set_ylim(min(heart_rate_averages)*(1 - _PLOT_PADDING), max(heart_rate_averages)*(1 + _PLOT_PADDING))
-        ax3.plot(x[:-1], np.array(heart_rate_averages), color=palette[3], label='Average Heart Rate')
-        ax3.set_xlabel('Distance (km)')
-        ax3.set_ylabel('BPM')
-        ax3.legend(loc='upper right', fontsize='xx-small')
+        ax3.plot(x[:-1], np.array(heart_rate_averages), color=palette[3], label="Average Heart Rate")
+        ax3.set_xlabel("Distance (km)")
+        ax3.set_ylabel("BPM")
+        ax3.legend(loc="upper right", fontsize="xx-small")
         ax3.grid()
 
     h1, l1 = ax1.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
-    ax1.legend(h1 + h2, l1 + l2, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=3 , fontsize='xx-small')
+    ax1.legend(h1 + h2, l1 + l2, loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=3 , fontsize="xx-small")
 
     if track.name:
         # TODO: time
         f.suptitle("{} on {}".format(track.name.strip(), track.get_time_bounds().start_time.date()))
 
     (input_basename, _) = os.path.splitext(os.path.basename(args.filename))
-    output_filename = '.'.join([input_basename, "png"])
+    output_filename = ".".join([input_basename, "png"])
     plt.savefig(output_filename, dpi=_PLOT_DPI)
     plt.close()

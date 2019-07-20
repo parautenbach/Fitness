@@ -1,3 +1,6 @@
+#! /
+# coding: utf-8
+
 import gpxpy
 import gpxpy.gpx
 import matplotlib.pylab as plt
@@ -50,10 +53,10 @@ if __name__ == "__main__":
     # print(cut_off)
     # if average speed is roughly more than 15km/h then relax the filter cut-off to get smoother elevation data
     # walk/run: 0.05
-    # cycle: 0.01 – cause it's faster
-    cut_off = 0.05
-    if average_speed >= 4.2:
-       cut_off = 0.01
+    # cycle: 0.01 - cause it's faster
+    cut_off = 0.03
+    #if average_speed >= 4.2:
+    #   cut_off = 0.01
     butterworth_filter = signal.butter(5, cut_off)
     elevations_filtered = signal.filtfilt(butterworth_filter[0], butterworth_filter[1], elevations)
     gradient = np.diff(elevations_filtered)
@@ -89,9 +92,9 @@ if __name__ == "__main__":
     else:
         (f, ax1) = plt.subplots(1, 1, sharex=True)
 
-    ax1.plot(x, elevations, color=palette[2], label='Raw elevation', fillstyle="bottom")
+    ax1.plot(x, elevations, color=palette[2], label='Raw Elevation', fillstyle="bottom")
     ax1.fill_between(x, elevations, 0, color=palette[2], alpha=0.5)
-    ax1.plot(x, elevations_filtered, color=palette[0], label='Smoothed elevation')
+    ax1.plot(x, elevations_filtered, color=palette[0], label='Smoothed Elevation')
     ax1.set_xlim(min(x), max(x))
     ax1.set_ylim(0, max(elevations)*1.2)
     ax1.set_ylabel('Elevation / change (m)')
@@ -109,7 +112,7 @@ if __name__ == "__main__":
     if args.plot_heart_rate and heart_rates:
         ax3.set_xlim(min(x), max(x))
         # email me if you're alive if your heart rate exceeded 230 bpm
-        ax3.set_ylim(0, 230)
+        ax3.set_ylim(50, 230)
         ax3.plot(x[:-1], np.array(heart_rate_averages), color=palette[3], label='Avg Heart Rate')
         ax3.set_xlabel('Distance (km)')
         ax3.set_ylabel('BPM')
@@ -121,7 +124,7 @@ if __name__ == "__main__":
     ax1.legend(h1 + h2, l1 + l2, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=3 , fontsize='xx-small')
 
     if track.name:
-        # TODO: track.get_time_bounds().start_time
+        # TODO: track.get_time_bounds().start_time + date
         f.suptitle(track.name)
 
     (input_basename, _) = os.path.splitext(os.path.basename(args.filename))

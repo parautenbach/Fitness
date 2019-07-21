@@ -40,6 +40,7 @@ if __name__ == "__main__":
     times = []
     elevations = []
     distances = []
+    speed = []
     heart_rates = []
     for point in points:
         if point_prev:
@@ -47,6 +48,8 @@ if __name__ == "__main__":
             # in meters
             delta_distance = haversine((point_prev.latitude, point_prev.longitude), (point.latitude, point.longitude))*1000
             distances.append(delta_distance)
+            current_speed = (delta_distance/1000)/float((point.time - point_prev.time).total_seconds()/3600)
+            speed.append(current_speed)
             # append the last valid elevation in case of a None or so
             elevations.append(point.elevation or elevations[-1])
         if point.extensions:
@@ -103,14 +106,19 @@ if __name__ == "__main__":
     sns.set_context(rc={"grid.linewidth": 0.3})
     (blue, orange, green, red, purple, brown, magenta, grey, yellow, cyan) = sns.color_palette("deep")
 
+    rows = None
     if args.plot_speed and args.plot_heart_rate and heart_rates:
-        (f, (ax1, ax4, ax3)) = plt.subplots(3, 1, sharex=True)
+        rows = 3
+        (f, (ax1, ax4, ax3)) = plt.subplots(rows, 1, sharex=True)
     elif args.plot_heart_rate and heart_rates and not args.plot_speed:
-        (f, (ax1, ax3)) = plt.subplots(2, 1, sharex=True)
+        rows = 2
+        (f, (ax1, ax3)) = plt.subplots(rows, 1, sharex=True)
     elif args.plot_speed and not args.plot_heart_rate:
-        (f, (ax1, ax4)) = plt.subplots(2, 1, sharex=True)
+        rows = 2
+        (f, (ax1, ax4)) = plt.subplots(rows, 1, sharex=True)
     else:
-        (f, ax1) = plt.subplots(1, 1, sharex=True)
+        rows = 1
+        (f, ax1) = plt.subplots(rows, 1, sharex=True)
 
     ax1.plot(x, elevations, color=green, label="Raw Elevation", fillstyle="bottom")
     ax1.fill_between(x, elevations, 0, color=green, alpha=0.5)
@@ -144,16 +152,18 @@ if __name__ == "__main__":
         ax4.set_xlim(min(x), max(x))
         ax4.set_ylim(min(speed_averages)*(1 - _PLOT_PADDING), max(speed_averages)*(1 + _PLOT_PADDING))
         ax4.plot(x[:-1], np.array(speed_averages), color=cyan, label="Average Speed")
-        #ax4.plot(x[:-1], heart_rates[:-2], color=palette[3], alpha=0.3, label="Heart Rate")
+        ax4.plot(x[:-1], speed[:-1], color=cyan, alpha=0.3, label="Speed")
         ax4.set_xlabel("Distance (km)")
         ax4.set_ylabel("km/h")
+        ax4.set_ylim(0, max(speed)*(1 + _PLOT_PADDING))
         ax4.legend(loc="upper right", fontsize="xx-small")
         ax4.grid()
 
     h1, l1 = ax1.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
     # https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
-    ax1.legend(h1 + h2, l1 + l2, loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=3 , fontsize="xx-small")
+    # FIX ME: + rows*0.05
+    ax1.legend(h1 + h2, l1 + l2, loc="upper center", bbox_to_anchor=(0.5, 1.2), ncol=3 , fontsize="xx-small")
 
     # TODO: speed, cadence, gradient of gradient on elevation chart, just gradient
 

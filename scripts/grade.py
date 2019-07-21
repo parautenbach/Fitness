@@ -24,6 +24,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-f", "--file", required=True, dest="filename", help="the GPX file to generate the plot for", metavar="FILE")
     parser.add_argument("-hr", "--heart-rate", dest="plot_heart_rate", action="store_true", help="generate a heart rate plot too")
+    parser.add_argument("-s", "--speed", dest="plot_speed", action="store_true", help="generate a speed plot too")
     # TODO: specify time x-axis
     # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
     args = parser.parse_args()
@@ -100,24 +101,29 @@ if __name__ == "__main__":
     # https://www.codecademy.com/articles/seaborn-design-i
     sns.set_style(style="ticks", rc={"grid.linestyle": "--"})
     sns.set_context(rc={"grid.linewidth": 0.3})
-    palette = sns.color_palette("deep")
+    (blue, orange, green, red, purple, brown, magenta, grey, yellow, cyan) = sns.color_palette("deep")
 
-    if args.plot_heart_rate and heart_rates:
+    if args.plot_speed and args.plot_heart_rate and heart_rates:
+        (f, (ax1, ax4, ax3)) = plt.subplots(3, 1, sharex=True)
+    elif args.plot_heart_rate and heart_rates and not args.plot_speed:
         (f, (ax1, ax3)) = plt.subplots(2, 1, sharex=True)
+    elif args.plot_speed and not args.plot_heart_rate:
+        (f, (ax1, ax4)) = plt.subplots(2, 1, sharex=True)
     else:
         (f, ax1) = plt.subplots(1, 1, sharex=True)
 
-    ax1.plot(x, elevations, color=palette[2], label="Raw Elevation", fillstyle="bottom")
-    ax1.fill_between(x, elevations, 0, color=palette[2], alpha=0.5)
-    ax1.plot(x, elevations_filtered, color=palette[0], label="Smoothed Elevation")
+    ax1.plot(x, elevations, color=green, label="Raw Elevation", fillstyle="bottom")
+    ax1.fill_between(x, elevations, 0, color=green, alpha=0.5)
+    ax1.plot(x, elevations_filtered, color=blue, label="Smoothed Elevation")
     ax1.set_xlim(min(x), max(x))
+    ax1.set_xlabel("Distance (km)")
     ax1.set_ylim(0, max(elevations)*(1 + _PLOT_PADDING))
     ax1.set_ylabel("Elevation / change (m)")
     ax1.grid()
 
     ax2 = ax1.twinx()
     ax2.set_xlim(min(x), max(x))
-    ax2.plot(x[:-1], np.array(grades), color=palette[1], label="Stepped Grade")
+    ax2.plot(x[:-1], np.array(grades), color=orange, label="Stepped Grade")
     ax2.set_ylabel("Grade (%)")
     ax2.grid()
 
@@ -127,19 +133,29 @@ if __name__ == "__main__":
     if args.plot_heart_rate and heart_rates:
         ax3.set_xlim(min(x), max(x))
         ax3.set_ylim(min(heart_rate_averages)*(1 - _PLOT_PADDING), max(heart_rate_averages)*(1 + _PLOT_PADDING))
-        ax3.plot(x[:-1], np.array(heart_rate_averages), color=palette[3], label="Average Heart Rate")
-        ax3.plot(x[:-1], heart_rates[:-2], color=palette[3], alpha=0.3, label="Heart Rate")
+        ax3.plot(x[:-1], np.array(heart_rate_averages), color=red, label="Average Heart Rate")
+        ax3.plot(x[:-1], heart_rates[:-2], color=red, alpha=0.3, label="Heart Rate")
         ax3.set_xlabel("Distance (km)")
         ax3.set_ylabel("BPM")
         ax3.legend(loc="upper right", fontsize="xx-small")
         ax3.grid()
+
+    if args.plot_speed:
+        ax4.set_xlim(min(x), max(x))
+        ax4.set_ylim(min(speed_averages)*(1 - _PLOT_PADDING), max(speed_averages)*(1 + _PLOT_PADDING))
+        ax4.plot(x[:-1], np.array(speed_averages), color=cyan, label="Average Speed")
+        #ax4.plot(x[:-1], heart_rates[:-2], color=palette[3], alpha=0.3, label="Heart Rate")
+        ax4.set_xlabel("Distance (km)")
+        ax4.set_ylabel("km/h")
+        ax4.legend(loc="upper right", fontsize="xx-small")
+        ax4.grid()
 
     h1, l1 = ax1.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
     # https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
     ax1.legend(h1 + h2, l1 + l2, loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=3 , fontsize="xx-small")
 
-    # TODO: speed, cadence, gradient of gradient on elevation chart
+    # TODO: speed, cadence, gradient of gradient on elevation chart, just gradient
 
     if track.name:
         # TODO: time

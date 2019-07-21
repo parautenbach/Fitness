@@ -1,3 +1,0 @@
-#!/bin/bash
-
-mogrify -resize "2048>" *.jpg

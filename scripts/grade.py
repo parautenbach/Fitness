@@ -36,11 +36,13 @@ if __name__ == "__main__":
     points = segment.points
 
     point_prev = None
+    times = []
     elevations = []
     distances = []
     heart_rates = []
     for point in points:
         if point_prev:
+            times.append(point.time)
             # in meters
             delta_distance = haversine((point_prev.latitude, point_prev.longitude), (point.latitude, point.longitude))*1000
             distances.append(delta_distance)
@@ -73,8 +75,12 @@ if __name__ == "__main__":
     markers = np.insert(zero_crossings, 0, 0)
     markers = np.append(markers, len(elevations) - 1)
 
+    # km
+    x = np.cumsum(distances)/1000
+
     grades = []
     heart_rate_averages = []
+    speed_averages = []
     for (idx, marker) in enumerate(markers[1:]):
         start = markers[idx]
         end = markers[idx + 1]
@@ -87,8 +93,9 @@ if __name__ == "__main__":
         # off by one error
         grades.extend(np.ones(end - start)*grade)
         heart_rate_averages.extend(np.ones(end - start)*np.average(heart_rates[start:end]))
-
-    x = np.cumsum(distances)/1000
+        # in km/h
+        average_speed = (x[end] - x[start])/float((times[end] - times[start]).total_seconds()/3600)
+        speed_averages.extend(np.ones(end - start)*average_speed)
 
     # https://www.codecademy.com/articles/seaborn-design-i
     sns.set_style(style="ticks", rc={"grid.linestyle": "--"})
@@ -121,6 +128,7 @@ if __name__ == "__main__":
         ax3.set_xlim(min(x), max(x))
         ax3.set_ylim(min(heart_rate_averages)*(1 - _PLOT_PADDING), max(heart_rate_averages)*(1 + _PLOT_PADDING))
         ax3.plot(x[:-1], np.array(heart_rate_averages), color=palette[3], label="Average Heart Rate")
+        ax3.plot(x[:-1], heart_rates[:-2], color=palette[3], alpha=0.3, label="Heart Rate")
         ax3.set_xlabel("Distance (km)")
         ax3.set_ylabel("BPM")
         ax3.legend(loc="upper right", fontsize="xx-small")
@@ -128,7 +136,10 @@ if __name__ == "__main__":
 
     h1, l1 = ax1.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
+    # https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
     ax1.legend(h1 + h2, l1 + l2, loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=3 , fontsize="xx-small")
+
+    # TODO: speed, cadence, gradient of gradient on elevation chart
 
     if track.name:
         # TODO: time

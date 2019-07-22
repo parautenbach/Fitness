@@ -13,6 +13,7 @@ from argparse import ArgumentParser
 from haversine import haversine
 
 _GPX_HR_TAG = "hr"
+_GPX_CADENCE_TAG = "cad"
 # percentage spacing above and below where required
 _PLOT_PADDING = 0.2
 _PLOT_DPI = 300
@@ -21,10 +22,12 @@ _FILTER_DEFAULT_CUT_OFF = 0.03
 _FILTER_ORDER = 5
 
 if __name__ == "__main__":
+    # TODO: main()
     parser = ArgumentParser()
     parser.add_argument("-f", "--file", required=True, dest="filename", help="the GPX file to generate the plot for", metavar="FILE")
     parser.add_argument("-hr", "--heart-rate", dest="plot_heart_rate", action="store_true", help="generate a heart rate plot too")
     parser.add_argument("-s", "--speed", dest="plot_speed", action="store_true", help="generate a speed plot too")
+    parser.add_argument("-c", "--cadence", dest="plot_cadence", action="store_true", help="generate a cadence plot too")
     # TODO: specify time x-axis
     # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
     args = parser.parse_args()
@@ -42,6 +45,7 @@ if __name__ == "__main__":
     distances = []
     speed = []
     heart_rates = []
+    cadences = []
     for point in points:
         if point_prev:
             times.append(point.time)
@@ -56,6 +60,8 @@ if __name__ == "__main__":
             for extension in point.extensions[0].getchildren():
                 if extension.tag[-2:] == _GPX_HR_TAG:
                     heart_rates.append(int(extension.text))
+                if extension.tag[-3:] == _GPX_CADENCE_TAG:
+                    cadences.append(int(extension.text))
         point_prev = point
 
     duration = gpx.get_moving_data().moving_time
@@ -166,6 +172,10 @@ if __name__ == "__main__":
     ax1.legend(h1 + h2, l1 + l2, loc="upper center", bbox_to_anchor=(0.5, 1.2), ncol=3 , fontsize="xx-small")
 
     # TODO: speed, cadence, gradient of gradient on elevation chart, just gradient
+    # TODO: scatter plot: 
+    # https://stackoverflow.com/questions/8453726/is-there-a-matplotlib-counterpart-of-matlab-stem3
+    # fig = pyplot.figure(); ax = fig.add_subplot(111, projection='3d'); ax.scatter3D(heart_rates[0:-2:10], speed[0:-1:10], 100*ef[0::10])
+    # ax.set_xlabel('hr'), ax.set_ylabel('s'), ax.set_zlabel('e')
 
     if track.name:
         # TODO: time

@@ -91,6 +91,7 @@ if __name__ == "__main__":
     grades = []
     heart_rate_averages = []
     speed_averages = []
+    cadence_averages = []
     for (idx, marker) in enumerate(markers[1:]):
         start = markers[idx]
         end = markers[idx + 1]
@@ -103,6 +104,7 @@ if __name__ == "__main__":
         # off by one error
         grades.extend(np.ones(end - start)*grade)
         heart_rate_averages.extend(np.ones(end - start)*np.average(heart_rates[start:end]))
+        cadence_averages.extend(np.ones(end - start)*np.average(cadences[start:end]))
         # in km/h
         average_speed = (x[end] - x[start])/float((times[end] - times[start]).total_seconds()/3600)
         speed_averages.extend(np.ones(end - start)*average_speed)
@@ -113,10 +115,11 @@ if __name__ == "__main__":
     (blue, orange, green, red, purple, brown, magenta, grey, yellow, cyan) = sns.color_palette("deep")
 
     rows = None
-    if args.plot_speed and args.plot_heart_rate and heart_rates:
-        rows = 3
-        (f, (ax1, ax4, ax3)) = plt.subplots(rows, 1, sharex=True)
-    elif args.plot_heart_rate and heart_rates and not args.plot_speed:
+    # TODO: Other cadence options
+    if args.plot_speed and (args.plot_heart_rate and heart_rates) and (args.plot_cadence and cadences):
+        rows = 4
+        (f, (ax1, ax4, ax5, ax3)) = plt.subplots(rows, 1, sharex=True)
+    elif (args.plot_heart_rate and heart_rates) and not args.plot_speed:
         rows = 2
         (f, (ax1, ax3)) = plt.subplots(rows, 1, sharex=True)
     elif args.plot_speed and not args.plot_heart_rate:
@@ -164,6 +167,17 @@ if __name__ == "__main__":
         ax4.set_ylim(0, max(speed)*(1 + _PLOT_PADDING))
         ax4.legend(loc="upper right", fontsize="xx-small")
         ax4.grid()
+
+    if args.plot_cadence:
+        ax5.set_xlim(min(x), max(x))
+        ax5.set_ylim(min(cadence_averages)*(1 - _PLOT_PADDING), max(cadence_averages)*(1 + _PLOT_PADDING))
+        ax5.plot(x[:-1], np.array(cadence_averages), color=purple, label="Average Cadence")
+        ax5.plot(x[:-1], cadences[:-2], color=purple, alpha=0.3, label="Cadence")
+        ax5.set_xlabel("Distance (km)")
+        ax5.set_ylabel("RPM")
+        ax5.set_ylim(0, max(cadences)*(1 + _PLOT_PADDING))
+        ax5.legend(loc="upper right", fontsize="xx-small")
+        ax5.grid()
 
     h1, l1 = ax1.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()

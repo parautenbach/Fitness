@@ -13,6 +13,7 @@ from argparse import ArgumentParser
 from haversine import haversine
 from matplotlib import colors
 from matplotlib import cm
+from matplotlib import collections
 
 _GPX_HR_TAG = "hr"
 _GPX_CADENCE_TAG = "cad"
@@ -23,6 +24,8 @@ _PLOT_DPI = 300
 _FILTER_DEFAULT_CUT_OFF = 0.03
 _FILTER_ORDER = 5
 _FONT_SIZE = "xx-small"
+# basically, if the grade is +/-33%, use that for the maximum for the colour map
+_GRADIENT_CLIPPING_FACTOR = 3/10
 
 if __name__ == "__main__":
     # TODO: main()
@@ -146,16 +149,26 @@ if __name__ == "__main__":
     ax_elevation.fill_between(x, elevations, 0, color=green, alpha=0.5)
     #ax_elevation.plot(x, elevations_filtered, color=blue, label="Smoothed Elevation")
     #ax_elevation.scatter(x[:-1], elevations_filtered[:-1], c=np.abs(gradient), s=1, edgecolor=None, label="Smoothed Elevation")
+
+    # calculate the smoothed gradients and create a colour map for it
     gg = np.abs(gradient)
     # first stretch the data to be in the range [0,1]
     gg = gg/gg.max()
-    # then, basically, if the grade is +/-30%, use that for the maximum for the colour map
-    s = 3/10
-    gg = np.clip(gg, 0, s)/s
+    gg = np.clip(gg, 0, _GRADIENT_CLIPPING_FACTOR)/_GRADIENT_CLIPPING_FACTOR
     cmap = colors.ListedColormap(sns.color_palette([yellow, orange, red]).as_hex())
     sc = ax_elevation.scatter(x[:-1], elevations_filtered[:-1], c=cmap(gg), s=0.1, edgecolor=None)
+
+    # plot the smoothed elevations, coloured according to the smoothed gradient
+    # https://matplotlib.org/3.1.0/gallery/lines_bars_and_markers/multicolored_line.html
+    elevation_points = np.array([x, elevations_filtered]).T.reshape(-1, 1, 2)
+    elevation_segments = np.concatenate([elevation_points[:-1], elevation_points[1:]], axis=1)
+    elevation_lines = collections.LineCollection(elevation_segments, cmap=cmap)
+    elevation_lines.set_array(gg)
+    line = ax_elevation.add_collection(elevation_lines)
+    #f.colorbar(line, ax=ax_elevation)
+
+    # other plot stuffs
     ax_elevation.set_xlim(min(x), max(x))
-    # TODO: refactor x-small (use rc or constant)
     ax_elevation.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
     ax_elevation.set_ylim(0, max(elevations)*(1 + _PLOT_PADDING))
     ax_elevation.set_ylabel("m", fontsize=_FONT_SIZE)

@@ -95,6 +95,7 @@ if __name__ == "__main__":
     heart_rate_averages = []
     speed_averages = []
     cadence_averages = []
+    cadence_percentages = []
     for (idx, marker) in enumerate(markers[1:]):
         start = markers[idx]
         end = markers[idx + 1]
@@ -109,6 +110,8 @@ if __name__ == "__main__":
         heart_rate_averages.extend(np.ones(end - start)*np.average(heart_rates[start:end]))
         # TODO: consider an alternative metric such as a percentile
         cadence_averages.extend(np.ones(end - start)*np.average(cadences[start:end]))
+        cadence_percentage_pedaling = len([c for c in cadences[start:end] if c > 0])/float(end - start)
+        cadence_percentages.extend(np.ones(end - start)*cadence_percentage_pedaling)
         # in km/h
         average_speed = (x[end] - x[start])/float((times[end] - times[start]).total_seconds()/3600)
         speed_averages.extend(np.ones(end - start)*average_speed)
@@ -164,7 +167,7 @@ if __name__ == "__main__":
     grades_max = np.ceil(max([abs(g) for g in grades]))
     # symmetric
     ax_grade.set_ylim(-grades_max*(1 + _PLOT_PADDING), grades_max*(1 + _PLOT_PADDING))
-    ax_grade.plot(x[:-1], np.array(grades), color=orange, label="Stepped Grade")
+    ax_grade.plot(x[:-1], np.array(grades), color=orange, alpha=0.7, label="Stepped Grade")
     ax_grade.set_ylabel("%", fontsize=_FONT_SIZE)
     ax_grade.tick_params(labelsize=_FONT_SIZE)
     ax_grade.grid()
@@ -197,11 +200,12 @@ if __name__ == "__main__":
 
     if args.plot_cadence:
         ax_cadence.set_xlim(min(x), max(x))
-        ax_cadence.set_ylim(min(cadence_averages)*(1 - _PLOT_PADDING), max(cadence_averages)*(1 + _PLOT_PADDING))
-        ax_cadence.plot(x[:-1], np.array(cadence_averages), color=purple, label="Average Cadence")
+        #ax_cadence.set_ylim(min(cadence_averages)*(1 - _PLOT_PADDING), max(cadence_averages)*(1 + _PLOT_PADDING))
+        #ax_cadence.plot(x[:-1], np.array(cadence_averages), color=purple, label="Average Cadence")
+        ax_cadence.plot(x[:-1], np.array(cadence_percentages)*100, color=purple, label="Percentage Pedaling")
         ax_cadence.plot(x[:-1], cadences[:-2], color=purple, alpha=0.3, label="Cadence")
         ax_cadence.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
-        ax_cadence.set_ylabel("RPM", fontsize=_FONT_SIZE)
+        ax_cadence.set_ylabel("RPM / %", fontsize=_FONT_SIZE)
         ax_cadence.set_ylim(0, max(cadences)*(1 + _PLOT_PADDING))
         ax_cadence.legend(loc="upper right", fontsize=_FONT_SIZE)
         ax_cadence.tick_params(labelsize=_FONT_SIZE)
@@ -228,3 +232,5 @@ if __name__ == "__main__":
     output_filename = ".".join([input_basename, "png"])
     plt.savefig(output_filename, dpi=_PLOT_DPI)
     plt.close()
+
+    # TODO: number of ups/downs and other summary stats

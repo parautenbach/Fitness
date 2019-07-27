@@ -35,10 +35,13 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--speed", dest="plot_speed", action="store_true", help="generate a speed plot too")
     parser.add_argument("-c", "--cadence", dest="plot_cadence", action="store_true", help="generate a cadence plot too")
     parser.add_argument("-i", "--interactive", dest="interactive_plot", action="store_true", help="open an interactive plot window besides saving the plot to file")
+    parser.add_argument("-q", "--quiet", dest="quiet", action="store_true", help="run in quiet mode")
     # TODO: specify time x-axis
     # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
     args = parser.parse_args()
 
+    if not args.quiet:
+        print("Parsing file {}".format(os.path.abspath(args.filename)))
     with open(args.filename, 'r') as input_file:
         gpx = gpxpy.parse(input_file)
 
@@ -95,6 +98,8 @@ if __name__ == "__main__":
     # km
     x = np.cumsum(distances)/1000
 
+    if not args.quiet:
+        print("Calculating metrics")
     grades = []
     heart_rate_averages = []
     speed_averages = []
@@ -120,6 +125,8 @@ if __name__ == "__main__":
         average_speed = (x[end] - x[start])/float((times[end] - times[start]).total_seconds()/3600)
         speed_averages.extend(np.ones(end - start)*average_speed)
 
+    if not args.quiet:
+        print("Plotting")
     # https://www.codecademy.com/articles/seaborn-design-i
     sns.set_style(style="ticks", rc={"grid.linestyle": "--"})
     sns.set_context(rc={"grid.linewidth": 0.3})
@@ -249,6 +256,8 @@ if __name__ == "__main__":
 
     (input_basename, _) = os.path.splitext(os.path.basename(args.filename))
     output_filename = ".".join([input_basename, "png"])
+    if not args.quiet:
+        print("Saving plot to {}".format(os.path.abspath(output_filename)))
     plt.savefig(output_filename, dpi=_PLOT_DPI)
 
     if args.interactive_plot:

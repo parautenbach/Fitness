@@ -127,6 +127,8 @@ if __name__ == "__main__":
 
     if args.interactive_plot:
         plt.ion()
+    else:
+        plt.ioff()
 
     rows = None
     axes = None

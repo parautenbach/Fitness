@@ -29,11 +29,12 @@ _GRADIENT_CLIPPING_FACTOR = 3/10
 
 if __name__ == "__main__":
     # TODO: main()
-    parser = ArgumentParser()
+    parser = ArgumentParser(description="Generate a smoothed elevation plot using a colour gradient and stepped grades to show general climbs and downhills.")
     parser.add_argument("-f", "--file", required=True, dest="filename", help="the GPX file to generate the plot for", metavar="FILE")
     parser.add_argument("-hr", "--heart-rate", dest="plot_heart_rate", action="store_true", help="generate a heart rate plot too")
     parser.add_argument("-s", "--speed", dest="plot_speed", action="store_true", help="generate a speed plot too")
     parser.add_argument("-c", "--cadence", dest="plot_cadence", action="store_true", help="generate a cadence plot too")
+    parser.add_argument("-i", "--interactive", dest="interactive_plot", action="store_true", help="open an interactive plot window besides saving the plot to file")
     # TODO: specify time x-axis
     # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
     args = parser.parse_args()
@@ -123,6 +124,9 @@ if __name__ == "__main__":
     sns.set_style(style="ticks", rc={"grid.linestyle": "--"})
     sns.set_context(rc={"grid.linewidth": 0.3})
     (blue, orange, green, red, purple, brown, magenta, grey, yellow, cyan) = sns.color_palette("deep")
+
+    if args.interactive_plot:
+        plt.ion()
 
     rows = None
     axes = None
@@ -244,6 +248,10 @@ if __name__ == "__main__":
     (input_basename, _) = os.path.splitext(os.path.basename(args.filename))
     output_filename = ".".join([input_basename, "png"])
     plt.savefig(output_filename, dpi=_PLOT_DPI)
-    plt.close()
+
+    if args.interactive_plot:
+        plt.show()
+        input("Press any key to quit ...")
+        plt.close()
 
     # TODO: number of ups/downs and other summary stats

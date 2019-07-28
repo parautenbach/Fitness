@@ -24,7 +24,7 @@ _PLOT_DPI = 300
 _FILTER_DEFAULT_CUT_OFF = 0.03
 _FILTER_ORDER = 5
 _FONT_SIZE = "xx-small"
-# basically, if the grade is +/-33%, use that for the maximum for the colour map
+# basically, if the grade is +/-33%, use that for the maximum for the colour map (because that is crazy steep)
 _GRADIENT_CLIPPING_FACTOR = 3/10
 
 if __name__ == "__main__":
@@ -137,21 +137,58 @@ if __name__ == "__main__":
     else:
         plt.ioff()
 
+    if args.plot_heart_rate and not heart_rates:
+        print("WARNING: Heart rate plot requested but no heart rate data could be found")
+
+    if args.plot_cadence and not cadences:
+        print("WARNING: Cadence plot requested but no cadence data could be found")
+
     rows = None
     axes = None
-    # TODO: Other cadence options
+    # speed, hr, cad
+    # 1, 1, 1
     if args.plot_speed and (args.plot_heart_rate and heart_rates) and (args.plot_cadence and cadences):
         rows = 4
         (f, axes) = plt.subplots(rows, 1, sharex=True)
-        (ax_elevation, ax_speed, ax_cadence, ax_hr) = axes
-    elif (args.plot_heart_rate and heart_rates) and not args.plot_speed:
-        rows = 2
+        (ax_elevation, ax_speed, ax_hr, ax_cadence) = axes
+    # speed, hr, not cad
+    # 1, 1, 0
+    elif args.plot_speed and (args.plot_heart_rate and heart_rates) and not (args.plot_cadence and cadences):
+        rows = 3
         (f, axes) = plt.subplots(rows, 1, sharex=True)
-        (ax_elevation, ax_hr) = axes
-    elif args.plot_speed and not args.plot_heart_rate:
+        (ax_elevation, ax_speed, ax_hr) = axes
+    # speed, not hr, cad
+    # 1, 0, 1
+    elif args.plot_speed and not (args.plot_heart_rate and heart_rates) and (args.plot_cadence and cadences):
+        rows = 3
+        (f, axes) = plt.subplots(rows, 1, sharex=True)
+        (ax_elevation, ax_speed, ax_cadence) = axes
+    # speed, not hr, not cad
+    # 1, 0, 0
+    elif args.plot_speed and not (args.plot_heart_rate and heart_rates) and not (args.plot_cadence and cadences):
         rows = 2
         (f, axes) = plt.subplots(rows, 1, sharex=True)
         (ax_elevation, ax_speed) = axes
+    # not speed, hr, cad
+    # 0, 1, 1
+    elif not args.plot_speed and (args.plot_heart_rate and heart_rates) and (args.plot_cadence and cadences):
+        rows = 3
+        (f, axes) = plt.subplots(rows, 1, sharex=True)
+        (ax_elevation, ax_hr, ax_cadence) = axes
+    # not speed, hr, not cad
+    # 0, 1, 0
+    elif not args.plot_speed and (args.plot_heart_rate and heart_rates) and not (args.plot_cadence and cadences):
+        rows = 2
+        (f, axes) = plt.subplots(rows, 1, sharex=True)
+        (ax_elevation, ax_hr) = axes
+    # not speed, not hr, cad
+    # 0, 0, 1
+    elif not args.plot_speed and not (args.plot_heart_rate and heart_rates) and args.plot_cadence:
+        rows = 2
+        (f, axes) = plt.subplots(rows, 1, sharex=True)
+        (ax_elevation, ax_cadence) = axes
+    # not speed, not hr, not cad
+    # 0, 0, 0
     else:
         rows = 1
         (f, axes) = plt.subplots(rows, 1, sharex=True)
@@ -198,20 +235,6 @@ if __name__ == "__main__":
     ax_grade.tick_params(labelsize=_FONT_SIZE)
     ax_grade.grid()
 
-    if args.plot_heart_rate and not heart_rates:
-        print("WARNING: Heart rate plot requested but no heart rate data could be found")
-
-    if args.plot_heart_rate and heart_rates:
-        ax_hr.set_xlim(min(x), max(x))
-        ax_hr.set_ylim(min(heart_rate_averages)*(1 - _PLOT_PADDING), max(heart_rate_averages)*(1 + _PLOT_PADDING))
-        ax_hr.plot(x[:-1], np.array(heart_rate_averages), color=red, label="Average Heart Rate")
-        ax_hr.plot(x[:-1], heart_rates[:-2], color=red, alpha=0.3, label="Heart Rate")
-        ax_hr.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
-        ax_hr.set_ylabel("BPM", fontsize=_FONT_SIZE)
-        ax_hr.legend(loc="upper right", fontsize=_FONT_SIZE)
-        ax_hr.tick_params(labelsize=_FONT_SIZE)
-        ax_hr.grid()
-
     if args.plot_speed:
         ax_speed.set_xlim(min(x), max(x))
         ax_speed.set_ylim(min(speed_averages)*(1 - _PLOT_PADDING), max(speed_averages)*(1 + _PLOT_PADDING))
@@ -224,7 +247,18 @@ if __name__ == "__main__":
         ax_speed.tick_params(labelsize=_FONT_SIZE)
         ax_speed.grid()
 
-    if args.plot_cadence:
+    if args.plot_heart_rate and heart_rates:
+        ax_hr.set_xlim(min(x), max(x))
+        ax_hr.set_ylim(min(heart_rate_averages)*(1 - _PLOT_PADDING), max(heart_rate_averages)*(1 + _PLOT_PADDING))
+        ax_hr.plot(x[:-1], np.array(heart_rate_averages), color=red, label="Average Heart Rate")
+        ax_hr.plot(x[:-1], heart_rates[:-2], color=red, alpha=0.3, label="Heart Rate")
+        ax_hr.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
+        ax_hr.set_ylabel("BPM", fontsize=_FONT_SIZE)
+        ax_hr.legend(loc="upper right", fontsize=_FONT_SIZE)
+        ax_hr.tick_params(labelsize=_FONT_SIZE)
+        ax_hr.grid()
+
+    if args.plot_cadence and cadences:
         ax_cadence.set_xlim(min(x), max(x))
         #ax_cadence.set_ylim(min(cadence_averages)*(1 - _PLOT_PADDING), max(cadence_averages)*(1 + _PLOT_PADDING))
         #ax_cadence.plot(x[:-1], np.array(cadence_averages), color=purple, label="Average Cadence")

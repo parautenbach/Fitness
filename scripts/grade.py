@@ -20,8 +20,11 @@ _GPX_CADENCE_TAG = "cad"
 # percentage spacing above and below where required
 _PLOT_PADDING = 0.2
 _PLOT_DPI = 300
+# 4.2m/s ~= 15km/h
+_CUT_OFF_SPEED = 4.2
 # default cut-off for the filter
-_FILTER_DEFAULT_CUT_OFF = 0.03
+_FILTER_DEFAULT_CUT_OFF = 0.05
+_FILTER_ALT_CUT_OFF = 0.01
 _FILTER_ORDER = 5
 _FONT_SIZE = "xx-small"
 # basically, if the grade is +/-33%, use that for the maximum for the colour map (because that is crazy steep)
@@ -85,8 +88,8 @@ if __name__ == "__main__":
     # walk/run: 0.05
     # cycle: 0.01 - cause it's faster
     cut_off = _FILTER_DEFAULT_CUT_OFF
-    #if average_speed >= 4.2:
-    #   cut_off = 0.01
+    if average_speed >= _CUT_OFF_SPEED:
+      cut_off = _FILTER_ALT_CUT_OFF
     butterworth_filter = signal.butter(_FILTER_ORDER, cut_off)
     elevations_filtered = signal.filtfilt(butterworth_filter[0], butterworth_filter[1], elevations)
     gradient = np.diff(elevations_filtered)
@@ -197,8 +200,6 @@ if __name__ == "__main__":
     #ax_elevation.plot(x, elevations, color=green, label="Raw Elevation", fillstyle="bottom")
     # TODO: gradients
     ax_elevation.fill_between(x, elevations, 0, color=green, alpha=0.5)
-    #ax_elevation.plot(x, elevations_filtered, color=blue, label="Smoothed Elevation")
-    #ax_elevation.scatter(x[:-1], elevations_filtered[:-1], c=np.abs(gradient), s=1, edgecolor=None, label="Smoothed Elevation")
 
     # calculate the smoothed gradients and create a colour map for it
     gg = np.abs(gradient)
@@ -276,12 +277,6 @@ if __name__ == "__main__":
     # https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
     l = ax_grade.legend(h2, l2, loc="upper right", fontsize=_FONT_SIZE)
 
-    # TODO: speed, cadence, gradient of gradient on elevation chart, just gradient
-    # TODO: scatter plot: 
-    # https://stackoverflow.com/questions/8453726/is-there-a-matplotlib-counterpart-of-matlab-stem3
-    # fig = pyplot.figure(); ax = fig.add_subplot(111, projection='3d'); ax.scatter3D(heart_rates[0:-2:10], speed[0:-1:10], 100*ef[0::10])
-    # ax.set_xlabel('hr'), ax.set_ylabel('s'), ax.set_zlabel('e')
-
     f.align_ylabels(axes)
 
     if track.name:
@@ -299,4 +294,6 @@ if __name__ == "__main__":
         input("Press any key to quit ...")
         plt.close()
 
-    # TODO: number of ups/downs and other summary stats
+    # TODO: --all option
+    # TODO: gradient plot
+    # TODO: number of ups/downs and other summary stats, steepest ascent/descent

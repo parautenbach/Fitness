@@ -8,6 +8,7 @@ import numpy as np
 import os.path
 import scipy.signal as signal
 import seaborn as sns
+import warnings
 
 from argparse import ArgumentParser
 from haversine import haversine
@@ -122,9 +123,12 @@ if __name__ == "__main__":
         grades.extend(np.ones(end - start)*grade)
         heart_rate_averages.extend(np.ones(end - start)*np.average(heart_rates[start:end]))
         # TODO: consider an alternative metric such as a percentile
-        cadence_averages.extend(np.ones(end - start)*np.average(cadences[start:end]))
-        cadence_percentage_pedaling = len([c for c in cadences[start:end] if c > 0])/float(end - start)
-        cadence_percentages.extend(np.ones(end - start)*cadence_percentage_pedaling)
+        # https://stackoverflow.com/questions/29688168/mean-nanmean-and-warning-mean-of-empty-slice
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            cadence_averages.extend(np.ones(end - start)*np.average(cadences[start:end]))
+            cadence_percentage_pedaling = len([c for c in cadences[start:end] if c > 0])/float(end - start)
+            cadence_percentages.extend(np.ones(end - start)*cadence_percentage_pedaling)
         # in km/h
         average_speed = (x[end] - x[start])/float((times[end] - times[start]).total_seconds()/3600)
         speed_averages.extend(np.ones(end - start)*average_speed)
@@ -295,6 +299,7 @@ if __name__ == "__main__":
         input("Press any key to quit ...")
         plt.close()
 
+    # TODO: Test with Jupyter
     # TODO: --all option, --cut-off option
     # TODO: gradient plot
     # TODO: number of ups/downs and other summary stats, steepest ascent/descent

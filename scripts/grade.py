@@ -21,10 +21,11 @@ _GPX_CADENCE_TAG = "cad"
 _PLOT_PADDING = 0.2
 _PLOT_DPI = 300
 # 4.2m/s ~= 15km/h
-_CUT_OFF_SPEED = 4.2
+# 2.8 m/s ~= 10km/h
+_CUT_OFF_SPEED = 2.8 # 4.2
 # default cut-off for the filter
 _FILTER_DEFAULT_CUT_OFF = 0.05
-_FILTER_ALT_CUT_OFF = 0.01
+_FILTER_ALT_CUT_OFF = 0.03
 _FILTER_ORDER = 5
 _FONT_SIZE = "xx-small"
 # basically, if the grade is +/-33%, use that for the maximum for the colour map (because that is crazy steep)
@@ -294,6 +295,6 @@ if __name__ == "__main__":
         input("Press any key to quit ...")
         plt.close()
 
-    # TODO: --all option
+    # TODO: --all option, --cut-off option
     # TODO: gradient plot
     # TODO: number of ups/downs and other summary stats, steepest ascent/descent

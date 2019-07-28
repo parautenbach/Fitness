@@ -32,8 +32,7 @@ _FONT_SIZE = "xx-small"
 # basically, if the grade is +/-33%, use that for the maximum for the colour map (because that is crazy steep)
 _GRADIENT_CLIPPING_FACTOR = 3/10
 
-if __name__ == "__main__":
-    # TODO: main()
+def setup_argparser():
     parser = ArgumentParser(description="Generate a smoothed elevation plot using a colour gradient and stepped grades to show general climbs and downhills.")
     parser.add_argument("-f", "--file", required=True, dest="filename", help="the GPX file to generate the plot for", metavar="FILE")
     parser.add_argument("-hr", "--heart-rate", dest="plot_heart_rate", action="store_true", help="generate a heart rate plot too")
@@ -41,15 +40,15 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--cadence", dest="plot_cadence", action="store_true", help="generate a cadence plot too")
     parser.add_argument("-i", "--interactive", dest="interactive_plot", action="store_true", help="open an interactive plot window besides saving the plot to file")
     parser.add_argument("-q", "--quiet", dest="quiet", action="store_true", help="run in quiet mode")
-    # TODO: specify time x-axis
-    # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
-    args = parser.parse_args()
+    return parser    
 
-    if not args.quiet:
-        print("Parsing file {}".format(os.path.abspath(args.filename)))
-    with open(args.filename, 'r') as input_file:
-        gpx = gpxpy.parse(input_file)
+def get_gpx(filename, quiet):
+    if not quiet:
+        print("Parsing file {}".format(os.path.abspath(filename)))
+    with open(filename, 'r') as input_file:
+        return gpxpy.parse(input_file)
 
+def parse_gpx(gpx):
     track = gpx.tracks[0]
     segment = track.segments[0]
     points = segment.points
@@ -78,10 +77,22 @@ if __name__ == "__main__":
                 if extension.tag[-3:] == _GPX_CADENCE_TAG:
                     cadences.append(int(extension.text))
         point_prev = point
+    return (track, times, distances, elevations, speed, heart_rates, cadences)
+
+if __name__ == "__main__":
+    # TODO: main()
+    # TODO: specify time x-axis
+    # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
+    parser = setup_argparser()
+    args = parser.parse_args()
+
+    gpx = get_gpx(args.filename, args.quiet)
+    (track, times, distances, elevations, speed, heart_rates, cadences) = parse_gpx(gpx)
 
     duration = gpx.get_moving_data().moving_time
     distance = gpx.get_moving_data().moving_distance
     average_speed = distance/duration
+
     # TODO: smarter cut-off
     # pace = 1/average_speed
     # cut_off = pace/20

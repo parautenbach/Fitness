@@ -26,7 +26,7 @@ _PLOT_DPI = 300
 _CUT_OFF_SPEED = 2.8 # 4.2
 # default cut-off for the filter
 _FILTER_DEFAULT_CUT_OFF = 0.05
-_FILTER_ALT_CUT_OFF = 0.03
+_FILTER_ALT_CUT_OFF = 0.02
 _FILTER_ORDER = 5
 _FONT_SIZE = "xx-small"
 # basically, if the grade is +/-33%, use that for the maximum for the colour map (because that is crazy steep)
@@ -79,20 +79,7 @@ def parse_gpx(gpx):
         point_prev = point
     return (track, times, distances, elevations, speed, heart_rates, cadences)
 
-if __name__ == "__main__":
-    # TODO: main()
-    # TODO: specify time x-axis
-    # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
-    parser = setup_argparser()
-    args = parser.parse_args()
-
-    gpx = get_gpx(args.filename, args.quiet)
-    (track, times, distances, elevations, speed, heart_rates, cadences) = parse_gpx(gpx)
-
-    duration = gpx.get_moving_data().moving_time
-    distance = gpx.get_moving_data().moving_distance
-    average_speed = distance/duration
-
+def get_filter(average_speed):
     # TODO: smarter cut-off
     # pace = 1/average_speed
     # cut_off = pace/20
@@ -103,19 +90,9 @@ if __name__ == "__main__":
     cut_off = _FILTER_DEFAULT_CUT_OFF
     if average_speed >= _CUT_OFF_SPEED:
       cut_off = _FILTER_ALT_CUT_OFF
-    butterworth_filter = signal.butter(_FILTER_ORDER, cut_off)
-    elevations_filtered = signal.filtfilt(butterworth_filter[0], butterworth_filter[1], elevations)
-    gradient = np.diff(elevations_filtered)
-    zero_crossings = np.where(np.diff(np.sign(gradient)))[0]
+    return signal.butter(_FILTER_ORDER, cut_off)
 
-    markers = np.insert(zero_crossings, 0, 0)
-    markers = np.append(markers, len(elevations) - 1)
-
-    # km
-    x = np.cumsum(distances)/1000
-
-    if not args.quiet:
-        print("Calculating metrics")
+def calculate_metrics(markers, distances, elevations):
     grades = []
     heart_rate_averages = []
     speed_averages = []
@@ -143,6 +120,37 @@ if __name__ == "__main__":
         # in km/h
         average_speed = (x[end] - x[start])/float((times[end] - times[start]).total_seconds()/3600)
         speed_averages.extend(np.ones(end - start)*average_speed)
+    return (grades, speed_averages, heart_rate_averages, cadence_percentages)
+
+
+if __name__ == "__main__":
+    # TODO: main()
+    # TODO: specify time x-axis
+    # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
+    parser = setup_argparser()
+    args = parser.parse_args()
+
+    gpx = get_gpx(args.filename, args.quiet)
+    (track, times, distances, elevations, speed, heart_rates, cadences) = parse_gpx(gpx)
+
+    duration = gpx.get_moving_data().moving_time
+    distance = gpx.get_moving_data().moving_distance
+    average_speed = distance/duration
+
+    butterworth_filter = get_filter(average_speed)
+    elevations_filtered = signal.filtfilt(butterworth_filter[0], butterworth_filter[1], elevations)
+    gradient = np.diff(elevations_filtered)
+    zero_crossings = np.where(np.diff(np.sign(gradient)))[0]
+
+    markers = np.insert(zero_crossings, 0, 0)
+    markers = np.append(markers, len(elevations) - 1)
+
+    # km
+    x = np.cumsum(distances)/1000
+
+    if not args.quiet:
+        print("Calculating metrics")
+    (grades, speed_averages, heart_rate_averages, cadence_percentages) = calculate_metrics(markers, distances, elevations)
 
     if not args.quiet:
         print("Plotting")

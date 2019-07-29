@@ -33,7 +33,7 @@ _GRADIENT_CLIPPING_FACTOR = 3/10
 
 if __name__ == "__main__":
     # TODO: main()
-    parser = ArgumentParser(description="Generate a smoothed elevation plot using a colour gradient and stepped grades to show general climbs and downhills.")
+    parser = ArgumentParser(description="Generate a smoothed elevation plot (PNG) using a colour gradient and stepped grades to show general climbs and downhills.")
     parser.add_argument("-f", "--file", required=True, dest="filename", help="the GPX file to generate the plot for", metavar="FILE")
     parser.add_argument("-hr", "--heart-rate", dest="plot_heart_rate", action="store_true", help="generate a heart rate plot too")
     parser.add_argument("-s", "--speed", dest="plot_speed", action="store_true", help="generate a speed plot too")
@@ -295,6 +295,6 @@ if __name__ == "__main__":
         input("Press any key to quit ...")
         plt.close()
 
-    # TODO: --all option, --cut-off option
+    # TODO: --all option, --cut-off option, --html
     # TODO: gradient plot
     # TODO: number of ups/downs and other summary stats, steepest ascent/descent

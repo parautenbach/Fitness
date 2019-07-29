@@ -249,7 +249,7 @@ if __name__ == "__main__":
     elevation_lines = collections.LineCollection(elevation_segments, cmap=cmap)
     elevation_lines.set_array(gg)
     line = ax_elevation.add_collection(elevation_lines)
-    #f.colorbar(line, ax=ax_elevation)
+    # TODO: f.colorbar(line, ax=ax_elevation)
 
     # other plot stuffs
     ax_elevation.set_xlim(min(x), max(x))
@@ -262,7 +262,7 @@ if __name__ == "__main__":
     ax_grade = ax_elevation.twinx()
     ax_grade.set_xlim(min(x), max(x))
     grades_max = np.ceil(max([abs(g) for g in grades]))
-    # symmetric
+    # make symmetric
     ax_grade.set_ylim(-grades_max*(1 + _PLOT_PADDING), grades_max*(1 + _PLOT_PADDING))
     ax_grade.plot(x[:-1], np.array(grades), color=orange, alpha=0.7, label="Stepped Grade")
     ax_grade.set_ylabel("%", fontsize=_FONT_SIZE)

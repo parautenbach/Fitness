@@ -122,56 +122,13 @@ def calculate_metrics(markers, distances, elevations):
         speed_averages.extend(np.ones(end - start)*average_speed)
     return (grades, speed_averages, heart_rate_averages, cadence_percentages)
 
-
-if __name__ == "__main__":
-    # TODO: main()
-    # TODO: specify time x-axis
-    # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
-    parser = setup_argparser()
-    args = parser.parse_args()
-
-    gpx = get_gpx(args.filename, args.quiet)
-    (track, times, distances, elevations, speed, heart_rates, cadences) = parse_gpx(gpx)
-
-    duration = gpx.get_moving_data().moving_time
-    distance = gpx.get_moving_data().moving_distance
-    average_speed = distance/duration
-
-    butterworth_filter = get_filter(average_speed)
-    elevations_filtered = signal.filtfilt(butterworth_filter[0], butterworth_filter[1], elevations)
-    gradient = np.diff(elevations_filtered)
-    zero_crossings = np.where(np.diff(np.sign(gradient)))[0]
-
-    markers = np.insert(zero_crossings, 0, 0)
-    markers = np.append(markers, len(elevations) - 1)
-
-    # km
-    x = np.cumsum(distances)/1000
-
-    if not args.quiet:
-        print("Calculating metrics")
-    (grades, speed_averages, heart_rate_averages, cadence_percentages) = calculate_metrics(markers, distances, elevations)
-
-    if not args.quiet:
-        print("Plotting")
-    # https://www.codecademy.com/articles/seaborn-design-i
-    sns.set_style(style="ticks", rc={"grid.linestyle": "--"})
-    sns.set_context(rc={"grid.linewidth": 0.3})
-    (blue, orange, green, red, purple, brown, magenta, grey, yellow, cyan) = sns.color_palette("deep")
-
-    if args.interactive_plot:
-        plt.ion()
-    else:
-        plt.ioff()
-
-    if args.plot_heart_rate and not heart_rates:
-        print("WARNING: Heart rate plot requested but no heart rate data could be found")
-
-    if args.plot_cadence and not cadences:
-        print("WARNING: Cadence plot requested but no cadence data could be found")
-
+def get_figure(args, heart_rates, cadences):
     rows = None
     axes = None
+    ax_elevation = None
+    ax_speed = None
+    ax_cadence = None
+    ax_hr = None
     # speed, hr, cad
     # 1, 1, 1
     if args.plot_speed and (args.plot_heart_rate and heart_rates) and (args.plot_cadence and cadences):
@@ -220,6 +177,58 @@ if __name__ == "__main__":
         rows = 1
         (f, axes) = plt.subplots(rows, 1, sharex=True)
         ax_elevation = axes
+    return (f, (ax_elevation, ax_speed, ax_hr, ax_cadence))
+
+
+if __name__ == "__main__":
+    # TODO: main()
+    # TODO: specify time x-axis
+    # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
+    parser = setup_argparser()
+    args = parser.parse_args()
+
+    gpx = get_gpx(args.filename, args.quiet)
+    (track, times, distances, elevations, speed, heart_rates, cadences) = parse_gpx(gpx)
+
+    duration = gpx.get_moving_data().moving_time
+    distance = gpx.get_moving_data().moving_distance
+    average_speed = distance/duration
+
+    butterworth_filter = get_filter(average_speed)
+    elevations_filtered = signal.filtfilt(butterworth_filter[0], butterworth_filter[1], elevations)
+    gradient = np.diff(elevations_filtered)
+    zero_crossings = np.where(np.diff(np.sign(gradient)))[0]
+
+    markers = np.insert(zero_crossings, 0, 0)
+    markers = np.append(markers, len(elevations) - 1)
+
+    # km
+    x = np.cumsum(distances)/1000
+
+    if not args.quiet:
+        print("Calculating metrics")
+    (grades, speed_averages, heart_rate_averages, cadence_percentages) = calculate_metrics(markers, distances, elevations)
+
+    if not args.quiet:
+        print("Plotting")
+    # https://www.codecademy.com/articles/seaborn-design-i
+    sns.set_style(style="ticks", rc={"grid.linestyle": "--"})
+    sns.set_context(rc={"grid.linewidth": 0.3})
+    (blue, orange, green, red, purple, brown, magenta, grey, yellow, cyan) = sns.color_palette("deep")
+
+    if args.interactive_plot:
+        plt.ion()
+    else:
+        plt.ioff()
+
+    if args.plot_heart_rate and not heart_rates:
+        print("WARNING: Heart rate plot requested but no heart rate data could be found")
+
+    if args.plot_cadence and not cadences:
+        print("WARNING: Cadence plot requested but no cadence data could be found")
+
+    (f, axes) = get_figure(args, heart_rates, cadences)
+    (ax_elevation, ax_speed, ax_hr, ax_cadence) = axes
 
     #ax_elevation.plot(x, elevations, color=green, label="Raw Elevation", fillstyle="bottom")
     # TODO: gradients
@@ -318,6 +327,7 @@ if __name__ == "__main__":
         input("Press any key to quit ...")
         plt.close()
 
+    # TODO: y-axis for cadence plot
     # TODO: Test with Jupyter
     # TODO: --all option, --cut-off option, --html
     # TODO: gradient plot

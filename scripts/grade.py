@@ -207,10 +207,16 @@ if __name__ == "__main__":
 
     if not args.quiet:
         print("Calculating metrics")
+
     (grades, speed_averages, heart_rate_averages, cadence_percentages) = calculate_metrics(markers, distances, elevations)
 
     if not args.quiet:
         print("Plotting")
+    if not args.quiet and (args.plot_heart_rate and not heart_rates):
+        print("WARNING: Heart rate plot requested but no heart rate data could be found")
+    if not args.quiet and (args.plot_cadence and not cadences):
+        print("WARNING: Cadence plot requested but no cadence data could be found")
+
     # https://www.codecademy.com/articles/seaborn-design-i
     sns.set_style(style="ticks", rc={"grid.linestyle": "--"})
     sns.set_context(rc={"grid.linewidth": 0.3})
@@ -221,14 +227,8 @@ if __name__ == "__main__":
     else:
         plt.ioff()
 
-    if args.plot_heart_rate and not heart_rates:
-        print("WARNING: Heart rate plot requested but no heart rate data could be found")
-
-    if args.plot_cadence and not cadences:
-        print("WARNING: Cadence plot requested but no cadence data could be found")
-
-    (f, axes) = get_figure(args, heart_rates, cadences)
-    (ax_elevation, ax_speed, ax_hr, ax_cadence) = axes
+    (f, (ax_elevation, ax_speed, ax_hr, ax_cadence)) = get_figure(args, heart_rates, cadences)
+    axes = tuple([a for a in (ax_elevation, ax_speed, ax_hr, ax_cadence) if a])
 
     #ax_elevation.plot(x, elevations, color=green, label="Raw Elevation", fillstyle="bottom")
     # TODO: gradients
@@ -269,7 +269,7 @@ if __name__ == "__main__":
     ax_grade.tick_params(labelsize=_FONT_SIZE)
     ax_grade.grid()
 
-    if args.plot_speed:
+    if ax_speed:
         ax_speed.set_xlim(min(x), max(x))
         ax_speed.set_ylim(min(speed_averages)*(1 - _PLOT_PADDING), max(speed_averages)*(1 + _PLOT_PADDING))
         ax_speed.plot(x[:-1], np.array(speed_averages), color=cyan, label="Average Speed")
@@ -281,7 +281,7 @@ if __name__ == "__main__":
         ax_speed.tick_params(labelsize=_FONT_SIZE)
         ax_speed.grid()
 
-    if args.plot_heart_rate and heart_rates:
+    if ax_hr:
         ax_hr.set_xlim(min(x), max(x))
         ax_hr.set_ylim(min(heart_rate_averages)*(1 - _PLOT_PADDING), max(heart_rate_averages)*(1 + _PLOT_PADDING))
         ax_hr.plot(x[:-1], np.array(heart_rate_averages), color=red, label="Average Heart Rate")
@@ -292,7 +292,7 @@ if __name__ == "__main__":
         ax_hr.tick_params(labelsize=_FONT_SIZE)
         ax_hr.grid()
 
-    if args.plot_cadence and cadences:
+    if ax_cadence:
         ax_cadence.set_xlim(min(x), max(x))
         #ax_cadence.set_ylim(min(cadence_averages)*(1 - _PLOT_PADDING), max(cadence_averages)*(1 + _PLOT_PADDING))
         #ax_cadence.plot(x[:-1], np.array(cadence_averages), color=purple, label="Average Cadence")

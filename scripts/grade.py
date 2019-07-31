@@ -1,6 +1,8 @@
 #!/bin/python
 # coding: utf-8
 
+"""Calculate a number of metrics and draw plots of those, e.g. more interesting and useful grade plots."""
+
 import gpxpy
 import gpxpy.gpx
 import matplotlib.pylab as plt
@@ -34,6 +36,7 @@ _GRADIENT_CLIPPING_FACTOR = 3/10
 
 
 def setup_argparser():
+    """Set up the command-line argument parser."""
     parser = ArgumentParser(description="Generate a smoothed elevation plot (PNG) using a colour gradient \
                                          and stepped grades to show general climbs and downhills.")
     parser.add_argument("-f", "--file", required=True, dest="filename", help="the GPX file to generate the plot for", metavar="FILE")
@@ -47,6 +50,7 @@ def setup_argparser():
 
 
 def get_gpx(filename, quiet):
+    """Get the contents of a GPX file."""
     if not quiet:
         print("Parsing file {}".format(os.path.abspath(filename)))
     with open(filename, 'r') as input_file:
@@ -54,6 +58,7 @@ def get_gpx(filename, quiet):
 
 
 def parse_gpx(gpx):
+    """Parse GPX data to extract elevation, heart rate and other data."""
     track = gpx.tracks[0]
     segment = track.segments[0]
     points = segment.points
@@ -86,6 +91,7 @@ def parse_gpx(gpx):
 
 
 def get_filter(average_speed):
+    """Create a filter to smooth the elevation data."""
     # TODO: smarter cut-off
     # pace = 1/average_speed
     # cut_off = pace/20
@@ -100,6 +106,7 @@ def get_filter(average_speed):
 
 
 def calculate_metrics(markers, distances, elevations):
+    """Calculate metrics using the smoothed elevation data and group it according to the first derivative."""
     grades = []
     heart_rate_averages = []
     speed_averages = []
@@ -131,6 +138,7 @@ def calculate_metrics(markers, distances, elevations):
 
 
 def get_figure(args, heart_rates, cadences):
+    """Create a subplot figure given the command-line arguments."""
     rows = None
     axes = None
     ax_elevation = None

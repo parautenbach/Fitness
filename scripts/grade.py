@@ -3,20 +3,22 @@
 
 """Calculate a number of metrics and draw plots of those, e.g. more interesting and useful grade plots."""
 
-import gpxpy
-import gpxpy.gpx
-import matplotlib.pylab as plt
-import numpy as np
 import os.path
-import scipy.signal as signal
-import seaborn as sns
 import warnings
 
 from argparse import ArgumentParser
+
+import gpxpy
+import gpxpy.gpx
+import matplotlib.pylab as plt
+
+from matplotlib import collections, colors
+
+import numpy as np
+import scipy.signal as signal
+import seaborn as sns
+
 from haversine import haversine
-from matplotlib import colors
-from matplotlib import cm
-from matplotlib import collections
 
 _GPX_HR_TAG = "hr"
 _GPX_CADENCE_TAG = "cad"
@@ -237,7 +239,7 @@ def main():
     # https://www.codecademy.com/articles/seaborn-design-i
     sns.set_style(style="ticks", rc={"grid.linestyle": "--"})
     sns.set_context(rc={"grid.linewidth": 0.3})
-    (blue, orange, green, red, purple, brown, magenta, grey, yellow, cyan) = sns.color_palette("deep")
+    (_blue, orange, green, red, purple, _brown, _magenta, _grey, yellow, cyan) = sns.color_palette("deep")
 
     if args.interactive_plot:
         plt.ion()
@@ -265,7 +267,8 @@ def main():
     elevation_segments = np.concatenate([elevation_points[:-1], elevation_points[1:]], axis=1)
     elevation_lines = collections.LineCollection(elevation_segments, cmap=cmap)
     elevation_lines.set_array(gg)
-    line = ax_elevation.add_collection(elevation_lines)
+    ax_elevation.add_collection(elevation_lines)
+    # line = ax_e...
     # TODO: f.colorbar(line, ax=ax_elevation)
 
     # other plot stuffs
@@ -322,7 +325,7 @@ def main():
         ax_cadence.tick_params(labelsize=_FONT_SIZE)
         ax_cadence.grid()
 
-    h1, l1 = ax_elevation.get_legend_handles_labels()
+    # h1, l1 = ax_elevation.get_legend_handles_labels()
     h2, l2 = ax_grade.get_legend_handles_labels()
     # https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
     ax_grade.legend(h2, l2, loc="upper right", fontsize=_FONT_SIZE)

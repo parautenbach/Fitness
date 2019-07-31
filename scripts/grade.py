@@ -23,7 +23,7 @@ _PLOT_PADDING = 0.2
 _PLOT_DPI = 300
 # 4.2m/s ~= 15km/h
 # 2.8 m/s ~= 10km/h
-_CUT_OFF_SPEED = 2.8 # 4.2
+_CUT_OFF_SPEED = 2.8  # 4.2
 # default cut-off for the filter
 _FILTER_DEFAULT_CUT_OFF = 0.05
 _FILTER_ALT_CUT_OFF = 0.02
@@ -32,21 +32,26 @@ _FONT_SIZE = "xx-small"
 # basically, if the grade is +/-33%, use that for the maximum for the colour map (because that is crazy steep)
 _GRADIENT_CLIPPING_FACTOR = 3/10
 
+
 def setup_argparser():
-    parser = ArgumentParser(description="Generate a smoothed elevation plot (PNG) using a colour gradient and stepped grades to show general climbs and downhills.")
+    parser = ArgumentParser(description="Generate a smoothed elevation plot (PNG) using a colour gradient \
+                                         and stepped grades to show general climbs and downhills.")
     parser.add_argument("-f", "--file", required=True, dest="filename", help="the GPX file to generate the plot for", metavar="FILE")
     parser.add_argument("-hr", "--heart-rate", dest="plot_heart_rate", action="store_true", help="generate a heart rate plot too")
     parser.add_argument("-s", "--speed", dest="plot_speed", action="store_true", help="generate a speed plot too")
     parser.add_argument("-c", "--cadence", dest="plot_cadence", action="store_true", help="generate a cadence plot too")
-    parser.add_argument("-i", "--interactive", dest="interactive_plot", action="store_true", help="open an interactive plot window besides saving the plot to file")
+    parser.add_argument("-i", "--interactive", dest="interactive_plot", action="store_true",
+                        help="open an interactive plot window besides saving the plot to file")
     parser.add_argument("-q", "--quiet", dest="quiet", action="store_true", help="run in quiet mode")
-    return parser    
+    return parser
+
 
 def get_gpx(filename, quiet):
     if not quiet:
         print("Parsing file {}".format(os.path.abspath(filename)))
     with open(filename, 'r') as input_file:
         return gpxpy.parse(input_file)
+
 
 def parse_gpx(gpx):
     track = gpx.tracks[0]
@@ -79,6 +84,7 @@ def parse_gpx(gpx):
         point_prev = point
     return (track, times, distances, elevations, speed, heart_rates, cadences)
 
+
 def get_filter(average_speed):
     # TODO: smarter cut-off
     # pace = 1/average_speed
@@ -89,8 +95,9 @@ def get_filter(average_speed):
     # cycle: 0.01 - cause it's faster
     cut_off = _FILTER_DEFAULT_CUT_OFF
     if average_speed >= _CUT_OFF_SPEED:
-      cut_off = _FILTER_ALT_CUT_OFF
+        cut_off = _FILTER_ALT_CUT_OFF
     return signal.butter(_FILTER_ORDER, cut_off)
+
 
 def calculate_metrics(markers, distances, elevations):
     grades = []
@@ -121,6 +128,7 @@ def calculate_metrics(markers, distances, elevations):
         average_speed = (x[end] - x[start])/float((times[end] - times[start]).total_seconds()/3600)
         speed_averages.extend(np.ones(end - start)*average_speed)
     return (grades, speed_averages, heart_rate_averages, cadence_percentages)
+
 
 def get_figure(args, heart_rates, cadences):
     rows = None
@@ -230,7 +238,7 @@ if __name__ == "__main__":
     (f, (ax_elevation, ax_speed, ax_hr, ax_cadence)) = get_figure(args, heart_rates, cadences)
     axes = tuple([a for a in (ax_elevation, ax_speed, ax_hr, ax_cadence) if a])
 
-    #ax_elevation.plot(x, elevations, color=green, label="Raw Elevation", fillstyle="bottom")
+    # ax_elevation.plot(x, elevations, color=green, label="Raw Elevation", fillstyle="bottom")
     # TODO: gradients
     ax_elevation.fill_between(x, elevations, 0, color=green, alpha=0.5)
 
@@ -294,8 +302,8 @@ if __name__ == "__main__":
 
     if ax_cadence:
         ax_cadence.set_xlim(min(x), max(x))
-        #ax_cadence.set_ylim(min(cadence_averages)*(1 - _PLOT_PADDING), max(cadence_averages)*(1 + _PLOT_PADDING))
-        #ax_cadence.plot(x[:-1], np.array(cadence_averages), color=purple, label="Average Cadence")
+        # ax_cadence.set_ylim(min(cadence_averages)*(1 - _PLOT_PADDING), max(cadence_averages)*(1 + _PLOT_PADDING))
+        # ax_cadence.plot(x[:-1], np.array(cadence_averages), color=purple, label="Average Cadence")
         ax_cadence.plot(x[:-1], np.array(cadence_percentages)*100, color=purple, label="Percentage Pedaling")
         ax_cadence.plot(x[:-1], cadences[:-2], color=purple, alpha=0.3, label="Cadence")
         ax_cadence.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
@@ -308,7 +316,7 @@ if __name__ == "__main__":
     h1, l1 = ax_elevation.get_legend_handles_labels()
     h2, l2 = ax_grade.get_legend_handles_labels()
     # https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
-    l = ax_grade.legend(h2, l2, loc="upper right", fontsize=_FONT_SIZE)
+    ax_grade.legend(h2, l2, loc="upper right", fontsize=_FONT_SIZE)
 
     f.align_ylabels(axes)
 

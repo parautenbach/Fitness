@@ -105,7 +105,7 @@ def get_filter(average_speed):
     return signal.butter(_FILTER_ORDER, cut_off)
 
 
-def calculate_metrics(markers, distances, elevations):
+def calculate_metrics(markers, distances, cumulative_distances, times, elevations, heart_rates, cadences):
     """Calculate metrics using the smoothed elevation data and group it according to the first derivative."""
     grades = []
     heart_rate_averages = []
@@ -132,7 +132,7 @@ def calculate_metrics(markers, distances, elevations):
             cadence_percentage_pedaling = len([c for c in cadences[start:end] if c > 0])/float(end - start)
             cadence_percentages.extend(np.ones(end - start)*cadence_percentage_pedaling)
         # in km/h
-        average_speed = (x[end] - x[start])/float((times[end] - times[start]).total_seconds()/3600)
+        average_speed = (cumulative_distances[end] - cumulative_distances[start])/float((times[end] - times[start]).total_seconds()/3600)
         speed_averages.extend(np.ones(end - start)*average_speed)
     return (grades, speed_averages, heart_rate_averages, cadence_percentages)
 
@@ -196,7 +196,8 @@ def get_figure(args, heart_rates, cadences):
     return (f, (ax_elevation, ax_speed, ax_hr, ax_cadence))
 
 
-if __name__ == "__main__":
+def main():
+    """Main programme."""
     # TODO: main()
     # TODO: specify time x-axis
     # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
@@ -224,7 +225,7 @@ if __name__ == "__main__":
     if not args.quiet:
         print("Calculating metrics")
 
-    (grades, speed_averages, heart_rate_averages, cadence_percentages) = calculate_metrics(markers, distances, elevations)
+    (grades, speed_averages, heart_rate_averages, cadence_percentages) = calculate_metrics(markers, distances, x, times, elevations, heart_rates, cadences)
 
     if not args.quiet:
         print("Plotting")
@@ -348,3 +349,6 @@ if __name__ == "__main__":
     # TODO: --all option, --cut-off option, --html
     # TODO: gradient plot
     # TODO: number of ups/downs and other summary stats, steepest ascent/descent
+
+if __name__ == "__main__":
+    main()

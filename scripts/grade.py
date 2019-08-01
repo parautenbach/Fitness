@@ -294,6 +294,11 @@ def main():
     ax_grade.tick_params(labelsize=_FONT_SIZE)
     ax_grade.grid()
 
+    # h1, l1 = ax_elevation.get_legend_handles_labels()
+    handles_ax_grade, legend_ax_grade = ax_grade.get_legend_handles_labels()
+    # https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
+    ax_grade.legend(handles_ax_grade, legend_ax_grade, loc="upper right", fontsize=_FONT_SIZE)
+
     if ax_speed:
         ax_speed.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
         ax_speed.set_ylim(min(metrics["speed_averages"])*(1 - _PLOT_PADDING), max(metrics["speed_averages"])*(1 + _PLOT_PADDING))
@@ -321,19 +326,31 @@ def main():
         ax_cadence.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
         # ax_cadence.set_ylim(min(cadence_averages)*(1 - _PLOT_PADDING), max(cadence_averages)*(1 + _PLOT_PADDING))
         # ax_cadence.plot(cumulative_distances[:-1], np.array(cadence_averages), color=purple, label="Average Cadence")
-        ax_cadence.plot(data["cumulative_distances"][:-1], np.array(metrics["cadence_percentages"])*100, color=purple, label="Percentage Pedaling")
+        # ax_cadence.plot(data["cumulative_distances"][:-1], np.array(metrics["cadence_percentages"])*100, color=purple, label="Percentage Pedaling")
         ax_cadence.plot(data["cumulative_distances"][:-1], data["cadences"][:-2], color=purple, alpha=0.3, label="Cadence")
         ax_cadence.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
-        ax_cadence.set_ylabel("RPM / %", fontsize=_FONT_SIZE)
+        ax_cadence.set_ylabel("RPM", fontsize=_FONT_SIZE)
         ax_cadence.set_ylim(0, max(data["cadences"])*(1 + _PLOT_PADDING))
-        ax_cadence.legend(loc="upper right", fontsize=_FONT_SIZE)
+        # ax_cadence.legend(loc="upper right", fontsize=_FONT_SIZE)
         ax_cadence.tick_params(labelsize=_FONT_SIZE)
         ax_cadence.grid()
 
-    # h1, l1 = ax_elevation.get_legend_handles_labels()
-    handles_ax_grade, legend_ax_grade = ax_grade.get_legend_handles_labels()
-    # https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
-    ax_grade.legend(handles_ax_grade, legend_ax_grade, loc="upper right", fontsize=_FONT_SIZE)
+        ax_pedaling = ax_cadence.twinx()
+        ax_pedaling.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
+        cadence_percentages = np.array(metrics["cadence_percentages"])*100
+        ax_pedaling.plot(data["cumulative_distances"][:-1], cadence_percentages, color=purple, label="Percentage Pedaling")
+        # grades_max = np.ceil(max([abs(g) for g in metrics["grades"]]))
+        # make symmetric
+        ax_pedaling.set_ylim(0, max(data["cadences"])*(1 + _PLOT_PADDING))
+        # ax_pedaling.set_ylim(min(cadence_percentages)*(1 - _PLOT_PADDING), max(cadence_percentages)*(1 + _PLOT_PADDING))
+        # ax_grade.plot(data["cumulative_distances"][:-1], np.array(metrics["grades"]), color=orange, alpha=0.7, label="Stepped Grade")
+        ax_pedaling.set_ylabel("%", fontsize=_FONT_SIZE)
+        ax_pedaling.tick_params(labelsize=_FONT_SIZE)
+        ax_pedaling.grid()
+
+        handles_ax_cadence, legend_ax_cadence = ax_cadence.get_legend_handles_labels()
+        handles_ax_pedaling, legend_ax_pedaling = ax_pedaling.get_legend_handles_labels()
+        ax_pedaling.legend(handles_ax_cadence + handles_ax_pedaling, legend_ax_cadence + legend_ax_pedaling, loc="upper right", fontsize=_FONT_SIZE)
 
     fig.align_ylabels(axes)
 
@@ -355,17 +372,16 @@ def main():
     if args.show_summary:
         print("Summary statistics:")
         overall_pedaling_fraction = len([c for c in data["cadences"] if c > 0])/float(len(data["cadences"]))
-        print(" Overall pedaling percentage: {:.1%}".format(overall_pedaling_fraction))
+        print("  Overall pedaling percentage: {:.1%}".format(overall_pedaling_fraction))
         ascents = [g for g in np.unique(metrics["grades"]) if g > 0]
         descents = [g for g in np.unique(metrics["grades"]) if g < 0]
-        print(" {} ascents at an average grade of {}% with the steepest one being {}%".format(len(ascents), 
-                                                                                              round(np.mean(ascents), 1),
-                                                                                              round(np.max(ascents), 1)))
-        print(" {} descents at an average grade of {}% with the steepest one being {}%".format(len(descents), 
-                                                                                               round(np.mean(descents), 1),
-                                                                                               round(np.min(descents), 1)))
+        print("  {} ascents at an average grade of {}% with the steepest one being {}%".format(len(ascents), 
+                                                                                               round(np.mean(ascents), 1),
+                                                                                               round(np.max(ascents), 1)))
+        print("  {} descents at an average grade of {}% with the steepest one being {}%".format(len(descents), 
+                                                                                                round(np.mean(descents), 1),
+                                                                                                round(np.min(descents), 1)))
 
-    # TODO: y-axis for cadence plot
     # TODO: Test with Jupyter
     # TODO: --all option, --cut-off option, --html
     # TODO: gradient plot

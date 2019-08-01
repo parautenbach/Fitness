@@ -44,6 +44,7 @@ def setup_argparser():
     parser.add_argument("-c", "--cadence", dest="plot_cadence", action="store_true", help="generate a cadence plot too")
     parser.add_argument("-i", "--interactive", dest="interactive_plot", action="store_true",
                         help="open an interactive plot window besides saving the plot to file")
+    parser.add_argument("-ss", "--summary", dest="show_summary", action="store_true", help="print some summary statistics for the workout")
     parser.add_argument("-q", "--quiet", dest="quiet", action="store_true", help="run in quiet mode")
     return parser
 
@@ -351,11 +352,16 @@ def main():
         input("Press any key to quit ...")
         plt.close()
 
+    if args.show_summary:
+        print("Summary statistics:")
+        overall_pedaling_fraction = len([c for c in data["cadences"] if c > 0])/float(len(data["cadences"]))
+        print("Overall pedaling percentage: {:.1%}".format(overall_pedaling_fraction))
+
     # TODO: y-axis for cadence plot
     # TODO: Test with Jupyter
     # TODO: --all option, --cut-off option, --html
     # TODO: gradient plot
-    # TODO: number of ups/downs and other summary stats, steepest ascent/descent
+    # TODO: number of ups/downs and other summary stats, steepest ascent/descent, avg grade up/down
 
 if __name__ == "__main__":
     main()

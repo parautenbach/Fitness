@@ -371,8 +371,9 @@ def main():
 
     if args.show_summary:
         print("Summary statistics:")
-        overall_pedaling_fraction = len([c for c in data["cadences"] if c > 0])/float(len(data["cadences"]))
-        print("  Overall pedaling percentage: {:.1%}".format(overall_pedaling_fraction))
+        if data["cadences"]:
+            overall_pedaling_fraction = len([c for c in data["cadences"] if c > 0])/float(len(data["cadences"]))
+            print("  Overall pedaling percentage: {:.1%}".format(overall_pedaling_fraction))
         ascents = [g for g in np.unique(metrics["grades"]) if g > 0]
         descents = [g for g in np.unique(metrics["grades"]) if g < 0]
         print("  {} ascents at an average grade of {}% with the steepest one being {}%".format(len(ascents), 

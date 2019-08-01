@@ -355,13 +355,20 @@ def main():
     if args.show_summary:
         print("Summary statistics:")
         overall_pedaling_fraction = len([c for c in data["cadences"] if c > 0])/float(len(data["cadences"]))
-        print("Overall pedaling percentage: {:.1%}".format(overall_pedaling_fraction))
+        print(" Overall pedaling percentage: {:.1%}".format(overall_pedaling_fraction))
+        ascents = [g for g in np.unique(metrics["grades"]) if g > 0]
+        descents = [g for g in np.unique(metrics["grades"]) if g < 0]
+        print(" {} ascents at an average grade of {}% with the steepest one being {}%".format(len(ascents), 
+                                                                                              round(np.mean(ascents), 1),
+                                                                                              round(np.max(ascents), 1)))
+        print(" {} descents at an average grade of {}% with the steepest one being {}%".format(len(descents), 
+                                                                                               round(np.mean(descents), 1),
+                                                                                               round(np.min(descents), 1)))
 
     # TODO: y-axis for cadence plot
     # TODO: Test with Jupyter
     # TODO: --all option, --cut-off option, --html
     # TODO: gradient plot
-    # TODO: number of ups/downs and other summary stats, steepest ascent/descent, avg grade up/down
 
 if __name__ == "__main__":
     main()

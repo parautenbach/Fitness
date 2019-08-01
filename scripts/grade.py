@@ -133,7 +133,6 @@ def calculate_metrics(markers, data):
         # off by one error
         metrics["grades"].extend(np.ones(end - start)*grade)
         metrics["heart_rate_averages"].extend(np.ones(end - start)*np.average(data["heart_rates"][start:end]))
-        # TODO: consider an alternative metric such as a percentile
         # https://stackoverflow.com/questions/29688168/mean-nanmean-and-warning-mean-of-empty-slice
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -141,7 +140,7 @@ def calculate_metrics(markers, data):
             cadence_percentage_pedaling = len([c for c in data["cadences"][start:end] if c > 0])/float(end - start)
             metrics["cadence_percentages"].extend(np.ones(end - start)*cadence_percentage_pedaling)
         # in km/h
-        average_speed = ((data["cumulative_distances"][end] - data["cumulative_distances"][start])/
+        average_speed = ((data["cumulative_distances"][end] - data["cumulative_distances"][start]) /
                          float((data["times"][end] - data["times"][start]).total_seconds()/3600))
         metrics["speed_averages"].extend(np.ones(end - start)*average_speed)
     return metrics
@@ -208,7 +207,6 @@ def get_figure(args, heart_rates, cadences):
 
 def main():
     """Main programme."""
-    # TODO: main()
     # TODO: specify time x-axis
     # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
     parser = setup_argparser()
@@ -376,16 +374,17 @@ def main():
             print("  Overall pedaling percentage: {:.1%}".format(overall_pedaling_fraction))
         ascents = [g for g in np.unique(metrics["grades"]) if g > 0]
         descents = [g for g in np.unique(metrics["grades"]) if g < 0]
-        print("  {} ascents at an average grade of {}% with the steepest one being {}%".format(len(ascents), 
+        print("  {} ascents at an average grade of {}% with the steepest one being {}%".format(len(ascents),
                                                                                                round(np.mean(ascents), 1),
                                                                                                round(np.max(ascents), 1)))
-        print("  {} descents at an average grade of {}% with the steepest one being {}%".format(len(descents), 
+        print("  {} descents at an average grade of {}% with the steepest one being {}%".format(len(descents),
                                                                                                 round(np.mean(descents), 1),
                                                                                                 round(np.min(descents), 1)))
 
     # TODO: Test with Jupyter
     # TODO: --all option, --cut-off option, --html
     # TODO: gradient plot
+
 
 if __name__ == "__main__":
     main()

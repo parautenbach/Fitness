@@ -63,30 +63,37 @@ def parse_gpx(gpx):
     points = segment.points
 
     point_prev = None
-    times = []
-    elevations = []
-    distances = []
-    speed = []
-    heart_rates = []
-    cadences = []
+    data = {
+                "times": [],
+                "distances": [],
+                "cumulative_distances": [],
+                "elevations": [],
+                "speed": [],
+                "heart_rates": [],
+                "cadences": []
+                }
     for point in points:
         if point_prev:
-            times.append(point.time)
+            data["times"].append(point.time)
             # in meters
             delta_distance = haversine((point_prev.latitude, point_prev.longitude), (point.latitude, point.longitude))*1000
-            distances.append(delta_distance)
+            data["distances"].append(delta_distance)
             current_speed = (delta_distance/1000)/float((point.time - point_prev.time).total_seconds()/3600)
-            speed.append(current_speed)
+            data["speed"].append(current_speed)
             # append the last valid elevation in case of a None or so
-            elevations.append(point.elevation or elevations[-1])
+            data["elevations"].append(point.elevation or data["elevations"][-1])
         if point.extensions:
             for extension in point.extensions[0].getchildren():
                 if extension.tag[-2:] == _GPX_HR_TAG:
-                    heart_rates.append(int(extension.text))
+                    data["heart_rates"].append(int(extension.text))
                 if extension.tag[-3:] == _GPX_CADENCE_TAG:
-                    cadences.append(int(extension.text))
+                    data["cadences"].append(int(extension.text))
         point_prev = point
-    return (track, times, distances, elevations, speed, heart_rates, cadences)
+
+    # km
+    data["cumulative_distances"] = np.cumsum(data["distances"])/1000
+
+    return (track, data)
 
 
 def get_filter(average_speed):
@@ -104,36 +111,39 @@ def get_filter(average_speed):
     return signal.butter(_FILTER_ORDER, cut_off)
 
 
-def calculate_metrics(markers, distances, cumulative_distances, times, elevations, heart_rates, cadences):
+def calculate_metrics(markers, data):
     """Calculate metrics using the smoothed elevation data and group it according to the first derivative."""
-    grades = []
-    heart_rate_averages = []
-    speed_averages = []
-    cadence_averages = []
-    cadence_percentages = []
+    metrics = {
+                "grades": [],
+                "heart_rate_averages": [],
+                "speed_averages": [],
+                "cadence_averages": [],
+                "cadence_percentages": []
+                }
     for (idx, _) in enumerate(markers[1:]):
         start = markers[idx]
         end = markers[idx + 1]
-        delta_distance = sum(distances[start:end])
-        delta_elevation = elevations[end] - elevations[start]
+        delta_distance = sum(data["distances"][start:end])
+        delta_elevation = data["elevations"][end] - data["elevations"][start]
         if delta_distance == 0:
             grade = 0
         else:
             grade = delta_elevation/delta_distance*100
         # off by one error
-        grades.extend(np.ones(end - start)*grade)
-        heart_rate_averages.extend(np.ones(end - start)*np.average(heart_rates[start:end]))
+        metrics["grades"].extend(np.ones(end - start)*grade)
+        metrics["heart_rate_averages"].extend(np.ones(end - start)*np.average(data["heart_rates"][start:end]))
         # TODO: consider an alternative metric such as a percentile
         # https://stackoverflow.com/questions/29688168/mean-nanmean-and-warning-mean-of-empty-slice
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            cadence_averages.extend(np.ones(end - start)*np.average(cadences[start:end]))
-            cadence_percentage_pedaling = len([c for c in cadences[start:end] if c > 0])/float(end - start)
-            cadence_percentages.extend(np.ones(end - start)*cadence_percentage_pedaling)
+            metrics["cadence_averages"].extend(np.ones(end - start)*np.average(data["cadences"][start:end]))
+            cadence_percentage_pedaling = len([c for c in data["cadences"][start:end] if c > 0])/float(end - start)
+            metrics["cadence_percentages"].extend(np.ones(end - start)*cadence_percentage_pedaling)
         # in km/h
-        average_speed = (cumulative_distances[end] - cumulative_distances[start])/float((times[end] - times[start]).total_seconds()/3600)
-        speed_averages.extend(np.ones(end - start)*average_speed)
-    return (grades, speed_averages, heart_rate_averages, cadence_percentages)
+        average_speed = ((data["cumulative_distances"][end] - data["cumulative_distances"][start])/
+                         float((data["times"][end] - data["times"][start]).total_seconds()/3600))
+        metrics["speed_averages"].extend(np.ones(end - start)*average_speed)
+    return metrics
 
 
 def get_figure(args, heart_rates, cadences):
@@ -204,33 +214,30 @@ def main():
     args = parser.parse_args()
 
     gpx = get_gpx(args.filename, args.quiet)
-    (track, times, distances, elevations, speed, heart_rates, cadences) = parse_gpx(gpx)
+    (track, data) = parse_gpx(gpx)
 
     duration = gpx.get_moving_data().moving_time
     distance = gpx.get_moving_data().moving_distance
     average_speed = distance/duration
 
     butterworth_filter = get_filter(average_speed)
-    elevations_filtered = signal.filtfilt(butterworth_filter[0], butterworth_filter[1], elevations)
+    elevations_filtered = signal.filtfilt(butterworth_filter[0], butterworth_filter[1], data["elevations"])
     gradient = np.diff(elevations_filtered)
     zero_crossings = np.where(np.diff(np.sign(gradient)))[0]
 
     markers = np.insert(zero_crossings, 0, 0)
-    markers = np.append(markers, len(elevations) - 1)
-
-    # km
-    cumulative_distances = np.cumsum(distances)/1000
+    markers = np.append(markers, len(data["elevations"]) - 1)
 
     if not args.quiet:
         print("Calculating metrics")
 
-    (grades, speed_averages, heart_rate_averages, cadence_percentages) = calculate_metrics(markers, distances, cumulative_distances, times, elevations, heart_rates, cadences)
+    metrics = calculate_metrics(markers, data)
 
     if not args.quiet:
         print("Plotting")
-    if not args.quiet and (args.plot_heart_rate and not heart_rates):
+    if not args.quiet and (args.plot_heart_rate and not data["heart_rates"]):
         print("WARNING: Heart rate plot requested but no heart rate data could be found")
-    if not args.quiet and (args.plot_cadence and not cadences):
+    if not args.quiet and (args.plot_cadence and not data["cadences"]):
         print("WARNING: Cadence plot requested but no cadence data could be found")
 
     # https://www.codecademy.com/articles/seaborn-design-i
@@ -243,12 +250,12 @@ def main():
     else:
         plt.ioff()
 
-    (fig, (ax_elevation, ax_speed, ax_hr, ax_cadence)) = get_figure(args, heart_rates, cadences)
+    (fig, (ax_elevation, ax_speed, ax_hr, ax_cadence)) = get_figure(args, data["heart_rates"], data["cadences"])
     axes = tuple([a for a in (ax_elevation, ax_speed, ax_hr, ax_cadence) if a])
 
     # ax_elevation.plot(x, elevations, color=green, label="Raw Elevation", fillstyle="bottom")
     # TODO: gradients
-    ax_elevation.fill_between(cumulative_distances, elevations, 0, color=green, alpha=0.5)
+    ax_elevation.fill_between(data["cumulative_distances"], data["elevations"], 0, color=green, alpha=0.5)
 
     # calculate the smoothed gradients and create a colour map for it
     gradient_abs = np.abs(gradient)
@@ -256,11 +263,11 @@ def main():
     gradient_normalised = gradient_abs/gradient_abs.max()
     gradient_clipped = np.clip(gradient_normalised, 0, _GRADIENT_CLIPPING_FACTOR)/_GRADIENT_CLIPPING_FACTOR
     cmap = colors.ListedColormap(sns.color_palette([yellow, orange, red]).as_hex())
-    ax_elevation.scatter(cumulative_distances[:-1], elevations_filtered[:-1], c=cmap(gradient_clipped), s=0.1, edgecolor=None)
+    ax_elevation.scatter(data["cumulative_distances"][:-1], elevations_filtered[:-1], c=cmap(gradient_clipped), s=0.1, edgecolor=None)
 
     # plot the smoothed elevations, coloured according to the smoothed gradient
     # https://matplotlib.org/3.1.0/gallery/lines_bars_and_markers/multicolored_line.html
-    elevation_points = np.array([cumulative_distances, elevations_filtered]).T.reshape(-1, 1, 2)
+    elevation_points = np.array([data["cumulative_distances"], elevations_filtered]).T.reshape(-1, 1, 2)
     elevation_segments = np.concatenate([elevation_points[:-1], elevation_points[1:]], axis=1)
     elevation_lines = collections.LineCollection(elevation_segments, cmap=cmap)
     elevation_lines.set_array(gradient_clipped)
@@ -269,40 +276,40 @@ def main():
     # TODO: f.colorbar(line, ax=ax_elevation)
 
     # other plot stuffs
-    ax_elevation.set_xlim(min(cumulative_distances), max(cumulative_distances))
+    ax_elevation.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
     ax_elevation.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
-    ax_elevation.set_ylim(0, max(elevations)*(1 + _PLOT_PADDING))
+    ax_elevation.set_ylim(0, max(data["elevations"])*(1 + _PLOT_PADDING))
     ax_elevation.set_ylabel("m", fontsize=_FONT_SIZE)
     ax_elevation.tick_params(labelsize=_FONT_SIZE)
     ax_elevation.grid()
 
     ax_grade = ax_elevation.twinx()
-    ax_grade.set_xlim(min(cumulative_distances), max(cumulative_distances))
-    grades_max = np.ceil(max([abs(g) for g in grades]))
+    ax_grade.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
+    grades_max = np.ceil(max([abs(g) for g in metrics["grades"]]))
     # make symmetric
     ax_grade.set_ylim(-grades_max*(1 + _PLOT_PADDING), grades_max*(1 + _PLOT_PADDING))
-    ax_grade.plot(cumulative_distances[:-1], np.array(grades), color=orange, alpha=0.7, label="Stepped Grade")
+    ax_grade.plot(data["cumulative_distances"][:-1], np.array(metrics["grades"]), color=orange, alpha=0.7, label="Stepped Grade")
     ax_grade.set_ylabel("%", fontsize=_FONT_SIZE)
     ax_grade.tick_params(labelsize=_FONT_SIZE)
     ax_grade.grid()
 
     if ax_speed:
-        ax_speed.set_xlim(min(cumulative_distances), max(cumulative_distances))
-        ax_speed.set_ylim(min(speed_averages)*(1 - _PLOT_PADDING), max(speed_averages)*(1 + _PLOT_PADDING))
-        ax_speed.plot(cumulative_distances[:-1], np.array(speed_averages), color=cyan, label="Average Speed")
-        ax_speed.plot(cumulative_distances[:-1], speed[:-1], color=cyan, alpha=0.3, label="Speed")
+        ax_speed.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
+        ax_speed.set_ylim(min(metrics["speed_averages"])*(1 - _PLOT_PADDING), max(metrics["speed_averages"])*(1 + _PLOT_PADDING))
+        ax_speed.plot(data["cumulative_distances"][:-1], np.array(metrics["speed_averages"]), color=cyan, label="Average Speed")
+        ax_speed.plot(data["cumulative_distances"][:-1], data["speed"][:-1], color=cyan, alpha=0.3, label="Speed")
         ax_speed.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
         ax_speed.set_ylabel("km/h", fontsize=_FONT_SIZE)
-        ax_speed.set_ylim(0, max(speed)*(1 + _PLOT_PADDING))
+        ax_speed.set_ylim(0, max(data["speed"])*(1 + _PLOT_PADDING))
         ax_speed.legend(loc="upper right", fontsize=_FONT_SIZE)
         ax_speed.tick_params(labelsize=_FONT_SIZE)
         ax_speed.grid()
 
     if ax_hr:
-        ax_hr.set_xlim(min(cumulative_distances), max(cumulative_distances))
-        ax_hr.set_ylim(min(heart_rate_averages)*(1 - _PLOT_PADDING), max(heart_rate_averages)*(1 + _PLOT_PADDING))
-        ax_hr.plot(cumulative_distances[:-1], np.array(heart_rate_averages), color=red, label="Average Heart Rate")
-        ax_hr.plot(cumulative_distances[:-1], heart_rates[:-2], color=red, alpha=0.3, label="Heart Rate")
+        ax_hr.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
+        ax_hr.set_ylim(min(metrics["heart_rate_averages"])*(1 - _PLOT_PADDING), max(metrics["heart_rate_averages"])*(1 + _PLOT_PADDING))
+        ax_hr.plot(data["cumulative_distances"][:-1], np.array(metrics["heart_rate_averages"]), color=red, label="Average Heart Rate")
+        ax_hr.plot(data["cumulative_distances"][:-1], data["heart_rates"][:-2], color=red, alpha=0.3, label="Heart Rate")
         ax_hr.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
         ax_hr.set_ylabel("BPM", fontsize=_FONT_SIZE)
         ax_hr.legend(loc="upper right", fontsize=_FONT_SIZE)
@@ -310,14 +317,14 @@ def main():
         ax_hr.grid()
 
     if ax_cadence:
-        ax_cadence.set_xlim(min(cumulative_distances), max(cumulative_distances))
+        ax_cadence.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
         # ax_cadence.set_ylim(min(cadence_averages)*(1 - _PLOT_PADDING), max(cadence_averages)*(1 + _PLOT_PADDING))
         # ax_cadence.plot(cumulative_distances[:-1], np.array(cadence_averages), color=purple, label="Average Cadence")
-        ax_cadence.plot(cumulative_distances[:-1], np.array(cadence_percentages)*100, color=purple, label="Percentage Pedaling")
-        ax_cadence.plot(cumulative_distances[:-1], cadences[:-2], color=purple, alpha=0.3, label="Cadence")
+        ax_cadence.plot(data["cumulative_distances"][:-1], np.array(metrics["cadence_percentages"])*100, color=purple, label="Percentage Pedaling")
+        ax_cadence.plot(data["cumulative_distances"][:-1], data["cadences"][:-2], color=purple, alpha=0.3, label="Cadence")
         ax_cadence.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
         ax_cadence.set_ylabel("RPM / %", fontsize=_FONT_SIZE)
-        ax_cadence.set_ylim(0, max(cadences)*(1 + _PLOT_PADDING))
+        ax_cadence.set_ylim(0, max(data["cadences"])*(1 + _PLOT_PADDING))
         ax_cadence.legend(loc="upper right", fontsize=_FONT_SIZE)
         ax_cadence.tick_params(labelsize=_FONT_SIZE)
         ax_cadence.grid()

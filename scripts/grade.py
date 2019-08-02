@@ -384,6 +384,8 @@ def main():
     # TODO: Test with Jupyter
     # TODO: --all option, --cut-off option, --html
     # TODO: gradient plot
+    # TODO: longest ascent/descent
+    # TODO: zero grade line
 
 
 if __name__ == "__main__":

@@ -386,8 +386,8 @@ def main():
         ascents = [g for g in np.unique(metrics["grades"]) if g > 0]        
         print("  {} ascents at an average grade of {:.1f}%".format(len(ascents), np.mean(ascents)))
         steepest_ascent_distance = get_distance(np.max(metrics["grades"]), metrics["grades"], data["cumulative_distances"])
-        print("  Steepest ascent was {}% over {:.3f}km".format(round(np.max(ascents), 1), steepest_ascent_distance))
-        longest_ascent_grade = max([g for g in metrics["grades"] if g > 0], key=metrics["grades"].count)
+        print("  Steepest ascent was {:.1f}% over {:.3f}km".format(np.max(ascents), steepest_ascent_distance))
+        longest_ascent_grade = max(ascents, key=metrics["grades"].count)
         longest_ascent_distance = get_distance(longest_ascent_grade, metrics["grades"], data["cumulative_distances"])
         print("  Longest ascent was {:.3f}km at a grade of {:.1f}%".format(longest_ascent_distance, longest_ascent_grade))
         print()
@@ -395,8 +395,8 @@ def main():
         descents = [g for g in np.unique(metrics["grades"]) if g < 0]
         print("  {} descents at an average grade of {:.1f}%".format(len(descents), np.mean(descents)))
         steepest_descent_distance = get_distance(np.min(metrics["grades"]), metrics["grades"], data["cumulative_distances"])
-        print("  Steepest descent was {}% over {:.3f}km".format(round(np.min(descents), 1), steepest_descent_distance))
-        longest_descent_grade = max([g for g in metrics["grades"] if g < 0], key=metrics["grades"].count)
+        print("  Steepest descent was {:.1f}% over {:.3f}km".format(np.min(descents), steepest_descent_distance))
+        longest_descent_grade = max(descents, key=metrics["grades"].count)
         longest_descent_distance = get_distance(longest_descent_grade, metrics["grades"], data["cumulative_distances"])
         print("  Longest descent was {:.3f}km at a grade of {:.1f}%".format(longest_descent_distance, longest_descent_grade))
         #print()

@@ -205,6 +205,14 @@ def get_figure(args, heart_rates, cadences):
     return (fig, (ax_elevation, ax_speed, ax_hr, ax_cadence))
 
 
+def get_distance(grade, grades, cumulative_distances):
+    """Get the distance covered by a specific grade."""
+    start = grades.index(grade)
+    end = len(grades) - 1 - grades[::-1].index(grade)
+    distance = cumulative_distances[end] - cumulative_distances[start]
+    return (distance, (start, end))
+
+
 def main():
     """Main programme."""
     # TODO: specify time x-axis
@@ -372,24 +380,39 @@ def main():
         plt.close()
 
     if args.show_summary:
-        print("Summary statistics:")
+        print("\nSummary statistics:")
         if data["cadences"]:
-            overall_pedaling_fraction = len([c for c in data["cadences"] if c > 0])/float(len(data["cadences"]))
-            print("  Overall pedaling percentage: {:.1%}".format(overall_pedaling_fraction))
-        ascents = [g for g in np.unique(metrics["grades"]) if g > 0]
+            cadences_non_zero = [c for c in data["cadences"] if c > 0]
+            overall_pedaling_fraction = len(cadences_non_zero)/float(len(data["cadences"]))
+            cadence_average = int(np.mean(cadences_non_zero))
+            print("  Overall pedaling percentage was {:.1%} at an average of {} RPM".format(overall_pedaling_fraction, cadence_average))
+            print()
+        
+        ascents = [g for g in np.unique(metrics["grades"]) if g > 0]        
+        print("  {} ascents at an average grade of {:.1f}%".format(len(ascents), np.mean(ascents)))
+        (steepest_ascent_distance, _) = get_distance(np.max(metrics["grades"]), metrics["grades"], data["cumulative_distances"])
+        print("  Steepest ascent was {:.1f}% over {:.3f}km".format(np.max(ascents), steepest_ascent_distance))
+        longest_ascent_grade = max(ascents, key=metrics["grades"].count)
+        (longest_ascent_distance, _) = get_distance(longest_ascent_grade, metrics["grades"], data["cumulative_distances"])
+        print("  Longest ascent was {:.3f}km at a grade of {:.1f}%".format(longest_ascent_distance, longest_ascent_grade))
+        print()
+        
         descents = [g for g in np.unique(metrics["grades"]) if g < 0]
-        print("  {} ascents at an average grade of {}% with the steepest one being {}%".format(len(ascents),
-                                                                                               round(np.mean(ascents), 1),
-                                                                                               round(np.max(ascents), 1)))
-        print("  {} descents at an average grade of {}% with the steepest one being {}%".format(len(descents),
-                                                                                                round(np.mean(descents), 1),
-                                                                                                round(np.min(descents), 1)))
+        print("  {} descents at an average grade of {:.1f}%".format(len(descents), np.mean(descents)))
+        (steepest_descent_distance, _) = get_distance(np.min(metrics["grades"]), metrics["grades"], data["cumulative_distances"])
+        print("  Steepest descent was {:.1f}% over {:.3f}km".format(np.min(descents), steepest_descent_distance))
+        longest_descent_grade = max(descents, key=metrics["grades"].count)
+        (longest_descent_distance, _) = get_distance(longest_descent_grade, metrics["grades"], data["cumulative_distances"])
+        print("  Longest descent was {:.3f}km at a grade of {:.1f}%".format(longest_descent_distance, longest_descent_grade))
+        #print()
 
     # TODO: Test with Jupyter
     # TODO: --all option, --cut-off option, --html
     # TODO: gradient plot
     # TODO: longest ascent/descent
     # TODO: zero grade line
+    # TODO: mark steepest/longest etc.
+    # TODO: align grade axis trick: int(max(e)/(max(grade)-min(grade)))*...
 
 
 if __name__ == "__main__":

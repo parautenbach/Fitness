@@ -278,6 +278,8 @@ def main():
     ax_elevation.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
     ax_elevation.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
     ax_elevation.set_ylim(0, max(data["elevations"])*(1 + _PLOT_PADDING))
+    # CHECK: do the (int(x)/10)*10 thing to get to the nearest 10 – it allows us to align the two grids
+    # ax_elevation.set_ylim(0, np.ceil(max(data["elevations"])*(1 + _PLOT_PADDING)/10)*10)
     ax_elevation.set_ylabel("m", fontsize=_FONT_SIZE)
     ax_elevation.tick_params(labelsize=_FONT_SIZE)
     ax_elevation.grid()
@@ -285,11 +287,13 @@ def main():
     ax_grade = ax_elevation.twinx()
     ax_grade.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
     grades_max = np.ceil(max([abs(g) for g in metrics["grades"]]))
+    # grades_max = np.ceil(max([abs(g) for g in metrics["grades"]])/10)*10
     # make symmetric
     ax_grade.set_ylim(-grades_max*(1 + _PLOT_PADDING), grades_max*(1 + _PLOT_PADDING))
     ax_grade.plot(data["cumulative_distances"][:-1], np.array(metrics["grades"]), color=orange, alpha=0.7, label="Stepped Grade")
     ax_grade.set_ylabel("%", fontsize=_FONT_SIZE)
     ax_grade.tick_params(labelsize=_FONT_SIZE)
+    ax_grade.axhline(y=0, color=orange, alpha=0.5, linestyle="--", linewidth=0.5)
     ax_grade.grid()
 
     # h1, l1 = ax_elevation.get_legend_handles_labels()

@@ -148,9 +148,6 @@ def calculate_metrics(markers, data):
 
 def get_figure(args, heart_rates, cadences):
     """Create a subplot figure given the command-line arguments."""
-    rows = None
-    axes = None
-    ax_elevation = None
     ax_speed = None
     ax_cadence = None
     ax_hr = None
@@ -158,48 +155,56 @@ def get_figure(args, heart_rates, cadences):
     # 1, 1, 1
     if args.plot_speed and (args.plot_heart_rate and heart_rates) and (args.plot_cadence and cadences):
         rows = 4
+        # noinspection PyTypeChecker
         (fig, axes) = plt.subplots(rows, 1, sharex=True)
         (ax_elevation, ax_speed, ax_hr, ax_cadence) = axes
     # speed, hr, not cad
     # 1, 1, 0
     elif args.plot_speed and (args.plot_heart_rate and heart_rates) and not (args.plot_cadence and cadences):
         rows = 3
+        # noinspection PyTypeChecker
         (fig, axes) = plt.subplots(rows, 1, sharex=True)
         (ax_elevation, ax_speed, ax_hr) = axes
     # speed, not hr, cad
     # 1, 0, 1
     elif args.plot_speed and not (args.plot_heart_rate and heart_rates) and (args.plot_cadence and cadences):
         rows = 3
+        # noinspection PyTypeChecker
         (fig, axes) = plt.subplots(rows, 1, sharex=True)
         (ax_elevation, ax_speed, ax_cadence) = axes
     # speed, not hr, not cad
     # 1, 0, 0
     elif args.plot_speed and not (args.plot_heart_rate and heart_rates) and not (args.plot_cadence and cadences):
         rows = 2
+        # noinspection PyTypeChecker
         (fig, axes) = plt.subplots(rows, 1, sharex=True)
         (ax_elevation, ax_speed) = axes
     # not speed, hr, cad
     # 0, 1, 1
     elif not args.plot_speed and (args.plot_heart_rate and heart_rates) and (args.plot_cadence and cadences):
         rows = 3
+        # noinspection PyTypeChecker
         (fig, axes) = plt.subplots(rows, 1, sharex=True)
         (ax_elevation, ax_hr, ax_cadence) = axes
     # not speed, hr, not cad
     # 0, 1, 0
     elif not args.plot_speed and (args.plot_heart_rate and heart_rates) and not (args.plot_cadence and cadences):
         rows = 2
+        # noinspection PyTypeChecker
         (fig, axes) = plt.subplots(rows, 1, sharex=True)
         (ax_elevation, ax_hr) = axes
     # not speed, not hr, cad
     # 0, 0, 1
     elif not args.plot_speed and not (args.plot_heart_rate and heart_rates) and args.plot_cadence:
         rows = 2
+        # noinspection PyTypeChecker
         (fig, axes) = plt.subplots(rows, 1, sharex=True)
         (ax_elevation, ax_cadence) = axes
     # not speed, not hr, not cad
     # 0, 0, 0
     else:
         rows = 1
+        # noinspection PyTypeChecker
         (fig, axes) = plt.subplots(rows, 1, sharex=True)
         ax_elevation = axes
     return (fig, (ax_elevation, ax_speed, ax_hr, ax_cadence))

@@ -1,2 +1,2 @@
 #!/bin/bash
-pycodestyle --config=../.pycodestyle ../scripts/grade.py
+pylint --rcfile=../.pylintrc ../scripts/grade.py

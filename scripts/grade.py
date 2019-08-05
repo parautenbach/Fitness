@@ -387,8 +387,8 @@ def main():
             cadence_average = int(np.mean(cadences_non_zero))
             print("  Overall pedaling percentage was {:.1%} at an average of {} RPM".format(overall_pedaling_fraction, cadence_average))
             print()
-        
-        ascents = [g for g in np.unique(metrics["grades"]) if g > 0]        
+
+        ascents = [g for g in np.unique(metrics["grades"]) if g > 0]
         print("  {} ascents at an average grade of {:.1f}%".format(len(ascents), np.mean(ascents)))
         (steepest_ascent_distance, _) = get_distance(np.max(metrics["grades"]), metrics["grades"], data["cumulative_distances"])
         print("  Steepest ascent was {:.1f}% over {:.3f}km".format(np.max(ascents), steepest_ascent_distance))
@@ -396,7 +396,7 @@ def main():
         (longest_ascent_distance, _) = get_distance(longest_ascent_grade, metrics["grades"], data["cumulative_distances"])
         print("  Longest ascent was {:.3f}km at a grade of {:.1f}%".format(longest_ascent_distance, longest_ascent_grade))
         print()
-        
+
         descents = [g for g in np.unique(metrics["grades"]) if g < 0]
         print("  {} descents at an average grade of {:.1f}%".format(len(descents), np.mean(descents)))
         (steepest_descent_distance, _) = get_distance(np.min(metrics["grades"]), metrics["grades"], data["cumulative_distances"])
@@ -404,7 +404,7 @@ def main():
         longest_descent_grade = max(descents, key=metrics["grades"].count)
         (longest_descent_distance, _) = get_distance(longest_descent_grade, metrics["grades"], data["cumulative_distances"])
         print("  Longest descent was {:.3f}km at a grade of {:.1f}%".format(longest_descent_distance, longest_descent_grade))
-        #print()
+        # print()
 
     # TODO: Test with Jupyter
     # TODO: --all option, --cut-off option, --html

@@ -52,7 +52,7 @@ def setup_argparser():
 def get_gpx(filename, quiet):
     """Get the contents of a GPX file."""
     if not quiet:
-        print("Parsing file {}".format(os.path.abspath(filename)))
+        print("Parsing file {filename}".format(filename=os.path.abspath(filename)))
     with open(filename, 'r') as input_file:
         return gpxpy.parse(input_file)
 
@@ -146,6 +146,11 @@ def calculate_metrics(markers, data):
     return metrics
 
 
+def calculate_elevation_change(grade, distance):
+    """Calculate the absolute elevation change."""
+    return abs(grade/100)*(distance*1000)
+
+
 def calculate_summary(data, metrics):
     """Calculate summary metrics."""
     summary = dict()
@@ -163,13 +168,14 @@ def calculate_summary(data, metrics):
     (steepest_ascent_distance, _) = get_distance(np.max(metrics["grades"]), metrics["grades"], data["cumulative_distances"])
     summary["steepest_ascent_grade"] = np.max(ascents)
     summary["steepest_ascent_distance"] = steepest_ascent_distance
+    summary["steepest_ascent_elevation_change"] = calculate_elevation_change(summary["steepest_ascent_grade"], summary["steepest_ascent_distance"])
 
     # TODO: longest and steepest could match
-    # TODO: % grade over km over m elevation change
     longest_ascent_grade = max(ascents, key=metrics["grades"].count)
     (longest_ascent_distance, _) = get_distance(longest_ascent_grade, metrics["grades"], data["cumulative_distances"])
     summary["longest_ascent_grade"] = longest_ascent_grade
     summary["longest_ascent_distance"] = longest_ascent_distance
+    summary["longest_ascent_elevation_change"] = calculate_elevation_change(summary["longest_ascent_grade"], summary["longest_ascent_distance"])
 
     descents = [g for g in np.unique(metrics["grades"]) if g < 0]
     summary["no_of_descents"] = len(descents)
@@ -178,11 +184,13 @@ def calculate_summary(data, metrics):
     (steepest_descent_distance, _) = get_distance(np.min(metrics["grades"]), metrics["grades"], data["cumulative_distances"])
     summary["steepest_descent_grade"] = np.min(descents)
     summary["steepest_descent_distance"] = steepest_descent_distance
+    summary["steepest_descent_elevation_change"] = calculate_elevation_change(summary["steepest_descent_grade"], summary["steepest_descent_distance"])
 
     longest_descent_grade = max(descents, key=metrics["grades"].count)
     (longest_descent_distance, _) = get_distance(longest_descent_grade, metrics["grades"], data["cumulative_distances"])
     summary["longest_descent_grade"] = longest_descent_grade
     summary["longest_descent_distance"] = longest_descent_distance
+    summary["longest_descent_elevation_change"] = calculate_elevation_change(summary["longest_descent_grade"], summary["longest_descent_distance"])
 
     return summary
 
@@ -191,18 +199,27 @@ def print_summary(summary):
     """Print summary data to the console."""
     print("\nSummary statistics:")
     if summary["overall_pedaling_fraction"]:
-        print("  Overall pedaling percentage was {:.1%} at an average of {} RPM".format(summary["overall_pedaling_fraction"],
-                                                                                        summary["cadence_average_non_zero"]))
+        print("  Overall pedaling percentage was {pp:.1%} at an average of {nzc} RPM".format(pp=summary["overall_pedaling_fraction"],
+                                                                                             nzc=summary["cadence_average_non_zero"]))
         print()
 
-    print("  {} ascents at an average grade of {:.1f}%".format(summary["no_of_ascents"], summary["average_ascent_grade"]))
-    print("  Steepest ascent was {:.1f}% over {:.3f}km".format(summary["steepest_ascent_grade"], summary["steepest_ascent_distance"]))
-    print("  Longest ascent was {:.3f}km at a grade of {:.1f}%".format(summary["longest_ascent_distance"], summary["longest_ascent_grade"]))
+    print("  {cnt} ascents at an average grade of {grade:.1f}%".format(cnt=summary["no_of_ascents"],
+                                                                       grade=summary["average_ascent_grade"]))
+    print("  Steepest ascent was {el:.0f}m over {dist:.3f}km with a grade of {grade:.1f}%".format(el=summary["steepest_ascent_elevation_change"],
+                                                                                                  dist=summary["steepest_ascent_distance"],
+                                                                                                  grade=summary["steepest_ascent_grade"]))
+    print("  Longest ascent was {el:.0f}m over {dist:.3f}km with a grade of {grade:.1f}%".format(el=summary["longest_ascent_elevation_change"],
+                                                                                                 dist=summary["longest_ascent_distance"],
+                                                                                                 grade=summary["longest_ascent_grade"]))
     print()
 
-    print("  {} descents at an average grade of {:.1f}%".format(summary["no_of_descents"], summary["average_descent_grade"]))
-    print("  Steepest descent was {:.1f}% over {:.3f}km".format(summary["steepest_descent_grade"], summary["steepest_descent_distance"]))
-    print("  Longest descent was {:.3f}km at a grade of {:.1f}%".format(summary["longest_descent_distance"], summary["longest_descent_grade"]))
+    print("  {cnt} descents at an average grade of {grade:.1f}%".format(cnt=summary["no_of_descents"], grade=summary["average_descent_grade"]))
+    print("  Steepest descent was {el:.0f}m over {dist:.3f}km with a grade of {grade:.1f}%".format(el=summary["steepest_descent_elevation_change"],
+                                                                                                   dist=summary["steepest_descent_distance"],
+                                                                                                   grade=summary["steepest_descent_grade"]))
+    print("  Longest descent was {el:.0f}m over {dist:.3f}km at a grade of {grade:.1f}%".format(el=summary["longest_descent_elevation_change"],
+                                                                                                dist=summary["longest_descent_distance"],
+                                                                                                grade=summary["longest_descent_grade"]))
     # print()
 
 
@@ -431,12 +448,12 @@ def main():
 
     if track.name:
         # TODO: time
-        fig.suptitle("{} on {}".format(track.name.strip(), track.get_time_bounds().start_time.date()))
+        fig.suptitle("{name} on {date}".format(name=track.name.strip(), date=track.get_time_bounds().start_time.date()))
 
     (input_basename, _) = os.path.splitext(os.path.basename(args.filename))
     output_filename = ".".join([input_basename, "png"])
     if not args.quiet:
-        print("Saving plot to {}".format(os.path.abspath(output_filename)))
+        print("Saving plot to {filename}".format(filename=os.path.abspath(output_filename)))
     plt.savefig(output_filename, dpi=_PLOT_DPI)
 
     if args.interactive_plot:

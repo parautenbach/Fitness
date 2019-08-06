@@ -151,6 +151,13 @@ def calculate_elevation_change(grade, distance):
     return abs(grade/100)*(distance*1000)
 
 
+def append_summary(prefix, summary, distance, grade):
+    """Append summary data."""
+    summary["{prefix}_grade".format(prefix=prefix)] = grade
+    summary["{prefix}_distance".format(prefix=prefix)] = distance
+    summary["{prefix}_elevation_change".format(prefix=prefix)] = calculate_elevation_change(grade, distance)
+
+
 def calculate_summary(data, metrics):
     """Calculate summary metrics."""
     summary = dict()
@@ -166,31 +173,23 @@ def calculate_summary(data, metrics):
     summary["average_ascent_grade"] = np.mean(ascents)
 
     (steepest_ascent_distance, _) = get_distance(np.max(metrics["grades"]), metrics["grades"], data["cumulative_distances"])
-    summary["steepest_ascent_grade"] = np.max(ascents)
-    summary["steepest_ascent_distance"] = steepest_ascent_distance
-    summary["steepest_ascent_elevation_change"] = calculate_elevation_change(summary["steepest_ascent_grade"], summary["steepest_ascent_distance"])
+    append_summary("steepest_ascent", summary, steepest_ascent_distance, np.max(ascents))
 
     # TODO: longest and steepest could match
     longest_ascent_grade = max(ascents, key=metrics["grades"].count)
     (longest_ascent_distance, _) = get_distance(longest_ascent_grade, metrics["grades"], data["cumulative_distances"])
-    summary["longest_ascent_grade"] = longest_ascent_grade
-    summary["longest_ascent_distance"] = longest_ascent_distance
-    summary["longest_ascent_elevation_change"] = calculate_elevation_change(summary["longest_ascent_grade"], summary["longest_ascent_distance"])
+    append_summary("longest_ascent", summary, longest_ascent_distance, longest_ascent_grade)
 
     descents = [g for g in np.unique(metrics["grades"]) if g < 0]
     summary["no_of_descents"] = len(descents)
     summary["average_descent_grade"] = np.mean(descents)
 
     (steepest_descent_distance, _) = get_distance(np.min(metrics["grades"]), metrics["grades"], data["cumulative_distances"])
-    summary["steepest_descent_grade"] = np.min(descents)
-    summary["steepest_descent_distance"] = steepest_descent_distance
-    summary["steepest_descent_elevation_change"] = calculate_elevation_change(summary["steepest_descent_grade"], summary["steepest_descent_distance"])
+    append_summary("steepest_descent", summary, steepest_descent_distance, np.min(descents))
 
     longest_descent_grade = max(descents, key=metrics["grades"].count)
     (longest_descent_distance, _) = get_distance(longest_descent_grade, metrics["grades"], data["cumulative_distances"])
-    summary["longest_descent_grade"] = longest_descent_grade
-    summary["longest_descent_distance"] = longest_descent_distance
-    summary["longest_descent_elevation_change"] = calculate_elevation_change(summary["longest_descent_grade"], summary["longest_descent_distance"])
+    append_summary("longest_descent", summary, longest_descent_distance, longest_descent_grade)
 
     return summary
 

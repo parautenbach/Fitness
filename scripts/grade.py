@@ -188,7 +188,7 @@ def calculate_summary(data, metrics):
 
 
 def print_summary(summary):
-    """"Print summary data to the console."""
+    """Print summary data to the console."""
     print("\nSummary statistics:")
     if summary["overall_pedaling_fraction"]:
         print("  Overall pedaling percentage was {:.1%} at an average of {} RPM".format(summary["overall_pedaling_fraction"],
@@ -209,7 +209,7 @@ def print_summary(summary):
 def get_figure(args, heart_rates, cadences):
     """Create a subplot figure given the command-line arguments."""
     ax_speed = None
-    ax_cadence = None
+    ax_pedaling = None
     ax_hr = None
     # speed, hr, cad
     # 1, 1, 1
@@ -217,7 +217,7 @@ def get_figure(args, heart_rates, cadences):
         rows = 4
         # noinspection PyTypeChecker
         (fig, axes) = plt.subplots(rows, 1, sharex=True)
-        (ax_elevation, ax_speed, ax_hr, ax_cadence) = axes
+        (ax_elevation, ax_speed, ax_hr, ax_pedaling) = axes
     # speed, hr, not cad
     # 1, 1, 0
     elif args.plot_speed and (args.plot_heart_rate and heart_rates) and not (args.plot_cadence and cadences):
@@ -231,7 +231,7 @@ def get_figure(args, heart_rates, cadences):
         rows = 3
         # noinspection PyTypeChecker
         (fig, axes) = plt.subplots(rows, 1, sharex=True)
-        (ax_elevation, ax_speed, ax_cadence) = axes
+        (ax_elevation, ax_speed, ax_pedaling) = axes
     # speed, not hr, not cad
     # 1, 0, 0
     elif args.plot_speed and not (args.plot_heart_rate and heart_rates) and not (args.plot_cadence and cadences):
@@ -245,7 +245,7 @@ def get_figure(args, heart_rates, cadences):
         rows = 3
         # noinspection PyTypeChecker
         (fig, axes) = plt.subplots(rows, 1, sharex=True)
-        (ax_elevation, ax_hr, ax_cadence) = axes
+        (ax_elevation, ax_hr, ax_pedaling) = axes
     # not speed, hr, not cad
     # 0, 1, 0
     elif not args.plot_speed and (args.plot_heart_rate and heart_rates) and not (args.plot_cadence and cadences):
@@ -259,7 +259,7 @@ def get_figure(args, heart_rates, cadences):
         rows = 2
         # noinspection PyTypeChecker
         (fig, axes) = plt.subplots(rows, 1, sharex=True)
-        (ax_elevation, ax_cadence) = axes
+        (ax_elevation, ax_pedaling) = axes
     # not speed, not hr, not cad
     # 0, 0, 0
     else:
@@ -267,7 +267,7 @@ def get_figure(args, heart_rates, cadences):
         # noinspection PyTypeChecker
         (fig, axes) = plt.subplots(rows, 1, sharex=True)
         ax_elevation = axes
-    return (fig, (ax_elevation, ax_speed, ax_hr, ax_cadence))
+    return (fig, (ax_elevation, ax_speed, ax_hr, ax_pedaling))
 
 
 def get_distance(grade, grades, cumulative_distances):
@@ -279,7 +279,7 @@ def get_distance(grade, grades, cumulative_distances):
 
 
 def main():
-    """Main programme."""
+    """Run the main programme."""
     # TODO: specify time x-axis
     # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
     parser = setup_argparser()
@@ -322,8 +322,8 @@ def main():
     else:
         plt.ioff()
 
-    (fig, (ax_elevation, ax_speed, ax_hr, ax_cadence)) = get_figure(args, data["heart_rates"], data["cadences"])
-    axes = tuple([a for a in (ax_elevation, ax_speed, ax_hr, ax_cadence) if a])
+    (fig, (ax_elevation, ax_speed, ax_hr, ax_pedaling)) = get_figure(args, data["heart_rates"], data["cadences"])
+    axes = tuple([a for a in (ax_elevation, ax_speed, ax_hr, ax_pedaling) if a])
 
     # ax_elevation.plot(x, elevations, color=green, label="Raw Elevation", fillstyle="bottom")
     # TODO: gradients
@@ -397,20 +397,7 @@ def main():
         ax_hr.tick_params(labelsize=_FONT_SIZE)
         ax_hr.grid()
 
-    if ax_cadence:
-        ax_cadence.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
-        # ax_cadence.set_ylim(min(cadence_averages)*(1 - _PLOT_PADDING), max(cadence_averages)*(1 + _PLOT_PADDING))
-        # ax_cadence.plot(cumulative_distances[:-1], np.array(cadence_averages), color=purple, label="Average Cadence")
-        # ax_cadence.plot(data["cumulative_distances"][:-1], np.array(metrics["cadence_percentages"])*100, color=purple, label="Percentage Pedaling")
-        ax_cadence.plot(data["cumulative_distances"][:-1], data["cadences"][:-2], color=purple, alpha=0.3, label="Cadence")
-        ax_cadence.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
-        ax_cadence.set_ylabel("RPM", fontsize=_FONT_SIZE)
-        ax_cadence.set_ylim(0, max(data["cadences"])*(1 + _PLOT_PADDING))
-        # ax_cadence.legend(loc="upper right", fontsize=_FONT_SIZE)
-        ax_cadence.tick_params(labelsize=_FONT_SIZE)
-        ax_cadence.grid()
-
-        ax_pedaling = ax_cadence.twinx()
+    if ax_pedaling:
         ax_pedaling.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
         cadence_percentages = np.array(metrics["cadence_percentages"])*100
         ax_pedaling.plot(data["cumulative_distances"][:-1], cadence_percentages, color=purple, label="Percentage Pedaling")
@@ -423,9 +410,22 @@ def main():
         ax_pedaling.tick_params(labelsize=_FONT_SIZE)
         ax_pedaling.grid()
 
+        ax_cadence = ax_pedaling.twinx()
+        ax_cadence.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
+        # ax_cadence.set_ylim(min(cadence_averages)*(1 - _PLOT_PADDING), max(cadence_averages)*(1 + _PLOT_PADDING))
+        # ax_cadence.plot(cumulative_distances[:-1], np.array(cadence_averages), color=purple, label="Average Cadence")
+        # ax_cadence.plot(data["cumulative_distances"][:-1], np.array(metrics["cadence_percentages"])*100, color=purple, label="Percentage Pedaling")
+        ax_cadence.plot(data["cumulative_distances"][:-1], data["cadences"][:-2], color=purple, alpha=0.3, label="Cadence")
+        ax_cadence.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
+        ax_cadence.set_ylabel("RPM", fontsize=_FONT_SIZE)
+        ax_cadence.set_ylim(0, max(data["cadences"])*(1 + _PLOT_PADDING))
+        # ax_cadence.legend(loc="upper right", fontsize=_FONT_SIZE)
+        ax_cadence.tick_params(labelsize=_FONT_SIZE)
+        ax_cadence.grid()
+
         handles_ax_cadence, legend_ax_cadence = ax_cadence.get_legend_handles_labels()
         handles_ax_pedaling, legend_ax_pedaling = ax_pedaling.get_legend_handles_labels()
-        ax_pedaling.legend(handles_ax_cadence + handles_ax_pedaling, legend_ax_cadence + legend_ax_pedaling, loc="upper right", fontsize=_FONT_SIZE)
+        ax_pedaling.legend(handles_ax_pedaling + handles_ax_cadence, legend_ax_pedaling + legend_ax_cadence, loc="upper right", fontsize=_FONT_SIZE)
 
     fig.align_ylabels(axes)
 

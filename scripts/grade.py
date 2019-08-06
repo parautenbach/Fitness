@@ -455,6 +455,7 @@ def main():
     # TODO: zero grade line
     # TODO: mark steepest/longest etc.
     # TODO: align grade axis trick: int(max(e)/(max(grade)-min(grade)))*...
+    # https://realpython.com/python-code-quality/
 
 
 if __name__ == "__main__":

@@ -151,13 +151,15 @@ def calculate_elevation_change(grade, distance):
     return abs(grade/100)*(distance*1000)
 
 
-def append_summary(prefix, summary, distance, grade, start, end):
+def append_summary(group, summary, distance, grade, start, end):
     """Append summary data."""
-    summary["{prefix}_grade".format(prefix=prefix)] = grade
-    summary["{prefix}_distance".format(prefix=prefix)] = distance
-    summary["{prefix}_elevation_change".format(prefix=prefix)] = calculate_elevation_change(grade, distance)
-    summary["{prefix}_section_start".format(prefix=prefix)] = start
-    summary["{prefix}_section_end".format(prefix=prefix)] = end
+    summary[group] = {
+        "grade": grade,
+        "distance": distance,
+        "elevation_change": calculate_elevation_change(grade, distance),
+        "section_start": start,
+        "section_end": end
+    }
 
 
 def calculate_summary(data, metrics):
@@ -186,9 +188,9 @@ def calculate_summary(data, metrics):
         "longest_descent": max(descents, key=metrics["grades"].count)
     }
 
-    for (prefix, grade) in summary_list.items():
+    for (group, grade) in summary_list.items():
         (distance, (start, end)) = get_distance(grade, metrics["grades"], data["cumulative_distances"])
-        append_summary(prefix, summary, distance, grade, start, end)
+        append_summary(group, summary, distance, grade, start, end)
 
     return summary
 
@@ -203,21 +205,22 @@ def print_summary(summary):
 
     print("  {cnt} ascents at an average grade of {grade:.1f}%".format(cnt=summary["no_of_ascents"],
                                                                        grade=summary["average_ascent_grade"]))
-    print("  Steepest ascent was {el:.0f}m over {dist:.3f}km with a grade of {grade:.1f}%".format(el=summary["steepest_ascent_elevation_change"],
-                                                                                                  dist=summary["steepest_ascent_distance"],
-                                                                                                  grade=summary["steepest_ascent_grade"]))
-    print("  Longest ascent was {el:.0f}m over {dist:.3f}km with a grade of {grade:.1f}%".format(el=summary["longest_ascent_elevation_change"],
-                                                                                                 dist=summary["longest_ascent_distance"],
-                                                                                                 grade=summary["longest_ascent_grade"]))
+    print("  Steepest ascent was {el:.0f}m over {dist:.3f}km with a grade of {grade:.1f}%".format(el=summary["steepest_ascent"]["elevation_change"],
+                                                                                                  dist=summary["steepest_ascent"]["distance"],
+                                                                                                  grade=summary["steepest_ascent"]["grade"]))
+    print("  Longest ascent was {el:.0f}m over {dist:.3f}km with a grade of {grade:.1f}%".format(el=summary["longest_ascent"]["elevation_change"],
+                                                                                                 dist=summary["longest_ascent"]["distance"],
+                                                                                                 grade=summary["longest_ascent"]["grade"]))
     print()
 
-    print("  {cnt} descents at an average grade of {grade:.1f}%".format(cnt=summary["no_of_descents"], grade=summary["average_descent_grade"]))
-    print("  Steepest descent was {el:.0f}m over {dist:.3f}km with a grade of {grade:.1f}%".format(el=summary["steepest_descent_elevation_change"],
-                                                                                                   dist=summary["steepest_descent_distance"],
-                                                                                                   grade=summary["steepest_descent_grade"]))
-    print("  Longest descent was {el:.0f}m over {dist:.3f}km at a grade of {grade:.1f}%".format(el=summary["longest_descent_elevation_change"],
-                                                                                                dist=summary["longest_descent_distance"],
-                                                                                                grade=summary["longest_descent_grade"]))
+    print("  {cnt} descents at an average grade of {grade:.1f}%".format(cnt=summary["no_of_descents"],
+                                                                        grade=summary["average_descent_grade"]))
+    print("  Steepest descent was {el:.0f}m over {dist:.3f}km with a grade of {grade:.1f}%".format(el=summary["steepest_descent"]["elevation_change"],
+                                                                                                   dist=summary["steepest_descent"]["distance"],
+                                                                                                   grade=summary["steepest_descent"]["grade"]))
+    print("  Longest descent was {el:.0f}m over {dist:.3f}km at a grade of {grade:.1f}%".format(el=summary["longest_descent"]["elevation_change"],
+                                                                                                dist=summary["longest_descent"]["distance"],
+                                                                                                grade=summary["longest_descent"]["grade"]))
     # print()
 
 
@@ -319,6 +322,7 @@ def main():
         print("Calculating metrics")
 
     metrics = calculate_metrics(markers, data)
+    summary = calculate_summary(data, metrics)
 
     if not args.quiet:
         print("Plotting")
@@ -343,7 +347,13 @@ def main():
     # ax_elevation.plot(x, elevations, color=green, label="Raw Elevation", fillstyle="bottom")
     # TODO: gradients
     ax_elevation.fill_between(data["cumulative_distances"], data["elevations"], 0, color=green, alpha=0.5)
-    ax_elevation.fill_between(data["cumulative_distances"][500:1000], data["elevations"][500:1000], 0, color=green, alpha=0.8)
+
+    for group in summary:
+        if isinstance(summary[group], dict):
+            start = summary[group]["section_start"]
+            # skip the last one purely for aesthetic reasons
+            end = summary[group]["section_end"] - 1
+            ax_elevation.fill_between(data["cumulative_distances"][start:end], data["elevations"][start:end], 0, color=green, alpha=0.8)
 
     # calculate the smoothed gradients and create a colour map for it
     gradient_abs = np.abs(gradient)
@@ -466,16 +476,11 @@ def main():
         plt.close()
 
     if args.show_summary:
-        summary = calculate_summary(data, metrics)
         print_summary(summary)
 
     # TODO: Test with Jupyter
     # TODO: --all option, --cut-off option, --html
     # TODO: gradient plot
-    # TODO: longest ascent/descent
-    # TODO: zero grade line
-    # TODO: mark steepest/longest etc.
-    # TODO: align grade axis trick: int(max(e)/(max(grade)-min(grade)))*...
     # https://realpython.com/python-code-quality/
 
 

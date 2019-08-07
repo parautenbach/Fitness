@@ -263,6 +263,16 @@ def get_distance(grade, grades, cumulative_distances):
     return (distance, (start, end))
 
 
+def mark_section_highlights(axis, distances, elevations, summary, colour):
+    """Mark section highlights (steepest/longest ascent/descent) on the elevation plot."""
+    for group in summary:
+        if isinstance(summary[group], dict):
+            start = summary[group]["section_start"]
+            # skip the last one purely for aesthetic reasons
+            end = summary[group]["section_end"] - 1
+            axis.fill_between(distances[start:end], elevations[start:end], 0, color=colour, alpha=0.8)
+
+
 def main():
     """Run the main programme."""
     # TODO: specify time x-axis
@@ -314,14 +324,7 @@ def main():
     # ax_elevation.plot(x, elevations, color=green, label="Raw Elevation", fillstyle="bottom")
     # TODO: gradients
     ax_elevation.fill_between(data["cumulative_distances"], data["elevations"], 0, color=green, alpha=0.5)
-
-    for group in summary:
-        if isinstance(summary[group], dict):
-            start = summary[group]["section_start"]
-            # skip the last one purely for aesthetic reasons
-            end = summary[group]["section_end"] - 1
-            ax_elevation.fill_between(data["cumulative_distances"][start:end], data["elevations"][start:end], 0, color=green, alpha=0.8)
-
+    mark_section_highlights(ax_elevation, data["cumulative_distances"], data["elevations"], summary, green)
     # calculate the smoothed gradients and create a colour map for it
     gradient_abs = np.abs(gradient)
     # first stretch the data to be in the range [0,1]

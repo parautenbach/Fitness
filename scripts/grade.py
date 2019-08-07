@@ -302,6 +302,15 @@ def plot_hr(axis, distances, heart_rate_averages, heart_rates, colour):
     set_common_plot_options(axis, distances)
 
 
+def save_figure(fig, args):
+    """Save the figure to disk."""
+    (input_basename, _) = os.path.splitext(os.path.basename(args.filename))
+    output_filename = ".".join([input_basename, "png"])
+    if not args.quiet:
+        print("Saving plot to {filename}".format(filename=os.path.abspath(output_filename)))
+    fig.savefig(output_filename, dpi=_PLOT_DPI)
+
+
 def main():
     """Run the main programme."""
     # TODO: specify time x-axis
@@ -332,13 +341,13 @@ def main():
 
     if not args.quiet:
         print("Plotting")
-    if not args.quiet and (args.plot_heart_rate and not data["heart_rates"]):
-        print("WARNING: Heart rate plot requested but no heart rate data could be found")
-    if not args.quiet and (args.plot_cadence and not data["cadences"]):
-        print("WARNING: Cadence plot requested but no cadence data could be found")
+        if args.plot_heart_rate and not data["heart_rates"]:
+            print("WARNING: Heart rate plot requested but no heart rate data could be found")
+        if args.plot_cadence and not data["cadences"]:
+            print("WARNING: Cadence plot requested but no cadence data could be found")
 
     # https://www.codecademy.com/articles/seaborn-design-i
-    sns.set_style(style="ticks", rc={"grid.linestyle": "--"})
+    sns.set_style(style="ticks", rc={"grid.linestyle": "-"})
     sns.set_context(rc={"grid.linewidth": 0.3})
     (_blue, orange, green, red, purple, _brown, _magenta, _grey, yellow, cyan) = sns.color_palette("deep")
 
@@ -442,11 +451,7 @@ def main():
         # TODO: time
         fig.suptitle("{name} on {date}".format(name=track.name.strip(), date=track.get_time_bounds().start_time.date()))
 
-    (input_basename, _) = os.path.splitext(os.path.basename(args.filename))
-    output_filename = ".".join([input_basename, "png"])
-    if not args.quiet:
-        print("Saving plot to {filename}".format(filename=os.path.abspath(output_filename)))
-    plt.savefig(output_filename, dpi=_PLOT_DPI)
+    save_figure(fig, args)
 
     if args.interactive_plot:
         plt.show()

@@ -322,7 +322,30 @@ def plot_pedaling(ax_pedaling, distances, cadence_percentages, cadences, colour)
     ax_cadence.legend(handles_ax_pedaling + handles_ax_cadence, legend_ax_pedaling + legend_ax_cadence, loc="upper right", fontsize=_FONT_SIZE)
 
 
-def plot_elevation(axis, distances, elevations, elevations_filtered, gradient, summary, colour, colour_range):
+def plot_graded_elevation(axis, distances, elevations, gradient, colour_map):
+    """Plot the elevation line using a colour gradient."""
+    # plot the smoothed elevations, coloured according to the smoothed gradient
+    # https://matplotlib.org/3.1.0/gallery/lines_bars_and_markers/multicolored_line.html
+    elevation_points = np.array([distances, elevations]).T.reshape(-1, 1, 2)
+    elevation_segments = np.concatenate([elevation_points[:-1], elevation_points[1:]], axis=1)
+    elevation_lines = collections.LineCollection(elevation_segments, cmap=colour_map)
+    elevation_lines.set_array(gradient)
+    axis.add_collection(elevation_lines)
+    # TODO: f.colorbar(line, ax=ax_elevation)
+
+
+def get_elevation_ylim(elevations):
+    """Determine a suitable limit for the y-axis that will ensure some even multiple of one of the ticks will be exactly halfway."""
+    # do this to align the y-axes
+    # not clear exactly how matplotlib determines ticks, but it seems to involve some even number, hence the 2
+    # we do two calculations to cater for elevation ranges in the tens vs the hundreds
+    if max(elevations)/200.0 > 0:
+        return np.ceil(max(elevations) / 200) * 200
+
+    return np.ceil(max(elevations) / 20) * 20
+
+
+def plot_elevation(axis, distances, elevations, elevations_filtered, gradient, summary, colour, colour_range):  # pylint: disable=too-many-arguments
     """Plot elevation data."""
     # TODO: gradients
     axis.fill_between(distances, elevations, 0, color=colour, alpha=0.5)
@@ -335,23 +358,9 @@ def plot_elevation(axis, distances, elevations, elevations_filtered, gradient, s
     colour_map = colors.ListedColormap(sns.color_palette(colour_range).as_hex())
     axis.scatter(distances[:-1], elevations_filtered[:-1], c=colour_map(gradient_clipped), s=0.1, edgecolor=None)
 
-    # plot the smoothed elevations, coloured according to the smoothed gradient
-    # https://matplotlib.org/3.1.0/gallery/lines_bars_and_markers/multicolored_line.html
-    elevation_points = np.array([distances, elevations_filtered]).T.reshape(-1, 1, 2)
-    elevation_segments = np.concatenate([elevation_points[:-1], elevation_points[1:]], axis=1)
-    elevation_lines = collections.LineCollection(elevation_segments, cmap=colour_map)
-    elevation_lines.set_array(gradient_clipped)
-    axis.add_collection(elevation_lines)
-    # TODO: f.colorbar(line, ax=ax_elevation)
+    plot_graded_elevation(axis, distances, elevations_filtered, gradient, colour_map)
 
-    # do this to align the y-axes
-    # not clear exactly how matplotlib determines ticks, but it seems to involve some even number, hence the 2
-    # we do two calculations to cater for elevation ranges in the tens vs the hundreds
-    if max(elevations)/200.0 > 0:
-        elevation_ymax = np.ceil(max(elevations) / 200) * 200
-    else:
-        elevation_ymax = np.ceil(max(elevations) / 20) * 20
-    axis.set_ylim(0, elevation_ymax)
+    axis.set_ylim(0, get_elevation_ylim(elevations))
     axis.set_ylabel("m", fontsize=_FONT_SIZE)
 
     set_common_plot_options(axis, distances, legend=False)

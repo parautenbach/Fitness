@@ -273,10 +273,11 @@ def mark_section_highlights(axis, distances, elevations, summary, colour):
             axis.fill_between(distances[start:end], elevations[start:end], 0, color=colour, alpha=0.8)
 
 
-def set_common_plot_options(axis, distances):
+def set_common_plot_options(axis, distances, legend=True):
     """Set plot options common to all axes."""
     axis.set_xlim(min(distances), max(distances))
-    axis.legend(loc="upper right", fontsize=_FONT_SIZE)
+    if legend:
+        axis.legend(loc="upper right", fontsize=_FONT_SIZE)
     axis.tick_params(labelsize=_FONT_SIZE)
     axis.set_xticklabels([])
     axis.grid()
@@ -287,7 +288,6 @@ def plot_speed(axis, distances, speed_averages, speed, colour):
     axis.plot(distances[:-1], np.array(speed_averages), color=colour, label="Average Speed")
     axis.plot(distances[:-1], speed[:-1], color=colour, alpha=0.3, label="Speed")
     axis.set_ylim(0, max(speed) * (1 + _PLOT_PADDING))
-    axis.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
     axis.set_ylabel("km/h", fontsize=_FONT_SIZE)
     set_common_plot_options(axis, distances)
 
@@ -297,9 +297,29 @@ def plot_hr(axis, distances, heart_rate_averages, heart_rates, colour):
     axis.plot(distances[:-1], np.array(heart_rate_averages), color=colour, label="Average Heart Rate")
     axis.plot(distances[:-1], heart_rates[:-2], color=colour, alpha=0.3, label="Heart Rate")
     axis.set_ylim(min(heart_rate_averages) * (1 - _PLOT_PADDING), max(heart_rate_averages) * (1 + _PLOT_PADDING))
-    axis.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
     axis.set_ylabel("BPM", fontsize=_FONT_SIZE)
     set_common_plot_options(axis, distances)
+
+
+def plot_pedaling(ax_pedaling, distances, cadence_percentages, cadences, colour):
+    """Plot pedaling and cadence data."""
+    cadence_percentages = np.array(cadence_percentages) * 100
+    ax_pedaling.plot(distances[:-1], cadence_percentages, color=colour, label="Percentage Pedaling")
+    # make symmetric
+    ax_pedaling.set_ylim(0, max(cadences) * (1 + _PLOT_PADDING))
+    ax_pedaling.set_ylabel("%", fontsize=_FONT_SIZE)
+    set_common_plot_options(ax_pedaling, distances, legend=False)
+
+    ax_cadence = ax_pedaling.twinx()
+    ax_cadence.plot(distances[:-1], cadences[:-2], color=colour, alpha=0.3, label="Cadence")
+    ax_cadence.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
+    ax_cadence.set_ylabel("RPM", fontsize=_FONT_SIZE)
+    ax_cadence.set_ylim(0, max(cadences) * (1 + _PLOT_PADDING))
+    set_common_plot_options(ax_cadence, distances, legend=False)
+
+    handles_ax_cadence, legend_ax_cadence = ax_cadence.get_legend_handles_labels()
+    handles_ax_pedaling, legend_ax_pedaling = ax_pedaling.get_legend_handles_labels()
+    ax_cadence.legend(handles_ax_pedaling + handles_ax_cadence, legend_ax_pedaling + legend_ax_cadence, loc="upper right", fontsize=_FONT_SIZE)
 
 
 def save_figure(fig, args):
@@ -420,31 +440,11 @@ def main():
         plot_hr(ax_hr, data["cumulative_distances"], metrics["heart_rate_averages"], data["heart_rates"], red)
 
     if ax_pedaling:
-        ax_pedaling.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
-        cadence_percentages = np.array(metrics["cadence_percentages"])*100
-        ax_pedaling.plot(data["cumulative_distances"][:-1], cadence_percentages, color=purple, label="Percentage Pedaling")
-        # make symmetric
-        ax_pedaling.set_ylim(0, max(data["cadences"])*(1 + _PLOT_PADDING))
-        ax_pedaling.set_ylabel("%", fontsize=_FONT_SIZE)
-        ax_pedaling.tick_params(labelsize=_FONT_SIZE)
-        ax_pedaling.set_xticklabels([])
-        ax_pedaling.grid()
+        plot_pedaling(ax_pedaling, data["cumulative_distances"], metrics["cadence_percentages"], data["cadences"], purple)
 
-        ax_cadence = ax_pedaling.twinx()
-        ax_cadence.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
-        ax_cadence.plot(data["cumulative_distances"][:-1], data["cadences"][:-2], color=purple, alpha=0.3, label="Cadence")
-        ax_cadence.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
-        ax_cadence.set_ylabel("RPM", fontsize=_FONT_SIZE)
-        ax_cadence.set_ylim(0, max(data["cadences"])*(1 + _PLOT_PADDING))
-        ax_cadence.tick_params(labelsize=_FONT_SIZE)
-        ax_cadence.set_xticklabels([])
-        ax_cadence.grid()
-
-        handles_ax_cadence, legend_ax_cadence = ax_cadence.get_legend_handles_labels()
-        handles_ax_pedaling, legend_ax_pedaling = ax_pedaling.get_legend_handles_labels()
-        ax_cadence.legend(handles_ax_pedaling + handles_ax_cadence, legend_ax_pedaling + legend_ax_cadence, loc="upper right", fontsize=_FONT_SIZE)
-
-    fig.axes[-1].xaxis.set_major_formatter(ticker.ScalarFormatter())
+    bottom_axis = axes[-1]
+    bottom_axis.xaxis.set_major_formatter(ticker.ScalarFormatter())
+    bottom_axis.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
     fig.align_ylabels(axes)
 
     if track.name:

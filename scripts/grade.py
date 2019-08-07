@@ -151,11 +151,13 @@ def calculate_elevation_change(grade, distance):
     return abs(grade/100)*(distance*1000)
 
 
-def append_summary(prefix, summary, distance, grade):
+def append_summary(prefix, summary, distance, grade, start, end):
     """Append summary data."""
     summary["{prefix}_grade".format(prefix=prefix)] = grade
     summary["{prefix}_distance".format(prefix=prefix)] = distance
     summary["{prefix}_elevation_change".format(prefix=prefix)] = calculate_elevation_change(grade, distance)
+    summary["{prefix}_section_start".format(prefix=prefix)] = start
+    summary["{prefix}_section_end".format(prefix=prefix)] = end
 
 
 def calculate_summary(data, metrics):
@@ -172,24 +174,21 @@ def calculate_summary(data, metrics):
     summary["no_of_ascents"] = len(ascents)
     summary["average_ascent_grade"] = np.mean(ascents)
 
-    (steepest_ascent_distance, _) = get_distance(np.max(metrics["grades"]), metrics["grades"], data["cumulative_distances"])
-    append_summary("steepest_ascent", summary, steepest_ascent_distance, np.max(ascents))
-
-    # TODO: longest and steepest could match
-    longest_ascent_grade = max(ascents, key=metrics["grades"].count)
-    (longest_ascent_distance, _) = get_distance(longest_ascent_grade, metrics["grades"], data["cumulative_distances"])
-    append_summary("longest_ascent", summary, longest_ascent_distance, longest_ascent_grade)
-
     descents = [g for g in np.unique(metrics["grades"]) if g < 0]
     summary["no_of_descents"] = len(descents)
     summary["average_descent_grade"] = np.mean(descents)
 
-    (steepest_descent_distance, _) = get_distance(np.min(metrics["grades"]), metrics["grades"], data["cumulative_distances"])
-    append_summary("steepest_descent", summary, steepest_descent_distance, np.min(descents))
+    # TODO: longest and steepest could match
+    summary_list = {
+        "steepest_ascent": np.max(metrics["grades"]),
+        "longest_ascent": max(ascents, key=metrics["grades"].count),
+        "steepest_descent": np.min(metrics["grades"]),
+        "longest_descent": max(descents, key=metrics["grades"].count)
+    }
 
-    longest_descent_grade = max(descents, key=metrics["grades"].count)
-    (longest_descent_distance, _) = get_distance(longest_descent_grade, metrics["grades"], data["cumulative_distances"])
-    append_summary("longest_descent", summary, longest_descent_distance, longest_descent_grade)
+    for (prefix, grade) in summary_list.items():
+        (distance, (start, end)) = get_distance(grade, metrics["grades"], data["cumulative_distances"])
+        append_summary(prefix, summary, distance, grade, start, end)
 
     return summary
 
@@ -344,31 +343,38 @@ def main():
     # ax_elevation.plot(x, elevations, color=green, label="Raw Elevation", fillstyle="bottom")
     # TODO: gradients
     ax_elevation.fill_between(data["cumulative_distances"], data["elevations"], 0, color=green, alpha=0.5)
+    ax_elevation.fill_between(data["cumulative_distances"][500:1000], data["elevations"][500:1000], 0, color=green, alpha=0.8)
 
     # calculate the smoothed gradients and create a colour map for it
     gradient_abs = np.abs(gradient)
     # first stretch the data to be in the range [0,1]
     gradient_normalised = gradient_abs/gradient_abs.max()
     gradient_clipped = np.clip(gradient_normalised, 0, _GRADIENT_CLIPPING_FACTOR)/_GRADIENT_CLIPPING_FACTOR
-    cmap = colors.ListedColormap(sns.color_palette([yellow, orange, red]).as_hex())
-    ax_elevation.scatter(data["cumulative_distances"][:-1], elevations_filtered[:-1], c=cmap(gradient_clipped), s=0.1, edgecolor=None)
+    colour_map = colors.ListedColormap(sns.color_palette([yellow, orange, red]).as_hex())
+    ax_elevation.scatter(data["cumulative_distances"][:-1], elevations_filtered[:-1], c=colour_map(gradient_clipped), s=0.1, edgecolor=None)
 
     # plot the smoothed elevations, coloured according to the smoothed gradient
     # https://matplotlib.org/3.1.0/gallery/lines_bars_and_markers/multicolored_line.html
     elevation_points = np.array([data["cumulative_distances"], elevations_filtered]).T.reshape(-1, 1, 2)
     elevation_segments = np.concatenate([elevation_points[:-1], elevation_points[1:]], axis=1)
-    elevation_lines = collections.LineCollection(elevation_segments, cmap=cmap)
+    elevation_lines = collections.LineCollection(elevation_segments, cmap=colour_map)
     elevation_lines.set_array(gradient_clipped)
     ax_elevation.add_collection(elevation_lines)
     # line = ax_e...
     # TODO: f.colorbar(line, ax=ax_elevation)
 
+    # do this to align the y-axes
+    # not clear exactly how matplotlib determines ticks, but it seems to involve some even number, hence the 2
+    # we do two calculations to cater for elevation ranges in the tens vs the hundreds
+    if max(data["elevations"])/200.0 > 0:
+        elevation_ymax = np.ceil(max(data["elevations"]) / 200) * 200
+    else:
+        elevation_ymax = np.ceil(max(data["elevations"]) / 20) * 20
+
     # other plot stuffs
     ax_elevation.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
     ax_elevation.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
-    ax_elevation.set_ylim(0, max(data["elevations"])*(1 + _PLOT_PADDING))
-    # CHECK: do the (int(x)/10)*10 thing to get to the nearest 10 – it allows us to align the two grids
-    # ax_elevation.set_ylim(0, np.ceil(max(data["elevations"])*(1 + _PLOT_PADDING)/10)*10)
+    ax_elevation.set_ylim(0, elevation_ymax)  # max(data["elevations"])*(1 + _PLOT_PADDING))
     ax_elevation.set_ylabel("m", fontsize=_FONT_SIZE)
     ax_elevation.tick_params(labelsize=_FONT_SIZE)
     ax_elevation.grid()
@@ -376,7 +382,6 @@ def main():
     ax_grade = ax_elevation.twinx()
     ax_grade.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
     grades_max = np.ceil(max([abs(g) for g in metrics["grades"]]))
-    # grades_max = np.ceil(max([abs(g) for g in metrics["grades"]])/10)*10
     # make symmetric
     ax_grade.set_ylim(-grades_max*(1 + _PLOT_PADDING), grades_max*(1 + _PLOT_PADDING))
     ax_grade.plot(data["cumulative_distances"][:-1], np.array(metrics["grades"]), color=orange, alpha=0.7, label="Stepped Grade")

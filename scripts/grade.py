@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 import gpxpy
 import gpxpy.gpx
 import matplotlib.pylab as plt
-from matplotlib import collections, colors
+from matplotlib import collections, colors, ticker
 import numpy as np
 import scipy.signal as signal
 import seaborn as sns
@@ -151,7 +151,7 @@ def calculate_elevation_change(grade, distance):
     return abs(grade/100)*(distance*1000)
 
 
-def append_summary(group, summary, distance, grade, start, end):
+def append_summary(group, summary, distance, grade, start, end):  # pylint: disable=too-many-arguments
     """Append summary data."""
     summary[group] = {
         "grade": grade,
@@ -224,67 +224,34 @@ def print_summary(summary):
     # print()
 
 
+def add_subplot(fig):
+    """Add another subplot row and adjust the geometry accordingly."""
+    n = len(fig.axes)
+    for i in range(n):
+        fig.axes[i].change_geometry(n + 1, 1, i + 1)
+
+    return fig.add_subplot(n + 1, 1, n + 1)
+
+
 def get_figure(args, heart_rates, cadences):
     """Create a subplot figure given the command-line arguments."""
+    # https://gist.github.com/LeoHuckvale/89683dc242f871c8e69b
     ax_speed = None
-    ax_pedaling = None
     ax_hr = None
-    # speed, hr, cad
-    # 1, 1, 1
-    if args.plot_speed and (args.plot_heart_rate and heart_rates) and (args.plot_cadence and cadences):
-        rows = 4
-        # noinspection PyTypeChecker
-        (fig, axes) = plt.subplots(rows, 1, sharex=True)
-        (ax_elevation, ax_speed, ax_hr, ax_pedaling) = axes
-    # speed, hr, not cad
-    # 1, 1, 0
-    elif args.plot_speed and (args.plot_heart_rate and heart_rates) and not (args.plot_cadence and cadences):
-        rows = 3
-        # noinspection PyTypeChecker
-        (fig, axes) = plt.subplots(rows, 1, sharex=True)
-        (ax_elevation, ax_speed, ax_hr) = axes
-    # speed, not hr, cad
-    # 1, 0, 1
-    elif args.plot_speed and not (args.plot_heart_rate and heart_rates) and (args.plot_cadence and cadences):
-        rows = 3
-        # noinspection PyTypeChecker
-        (fig, axes) = plt.subplots(rows, 1, sharex=True)
-        (ax_elevation, ax_speed, ax_pedaling) = axes
-    # speed, not hr, not cad
-    # 1, 0, 0
-    elif args.plot_speed and not (args.plot_heart_rate and heart_rates) and not (args.plot_cadence and cadences):
-        rows = 2
-        # noinspection PyTypeChecker
-        (fig, axes) = plt.subplots(rows, 1, sharex=True)
-        (ax_elevation, ax_speed) = axes
-    # not speed, hr, cad
-    # 0, 1, 1
-    elif not args.plot_speed and (args.plot_heart_rate and heart_rates) and (args.plot_cadence and cadences):
-        rows = 3
-        # noinspection PyTypeChecker
-        (fig, axes) = plt.subplots(rows, 1, sharex=True)
-        (ax_elevation, ax_hr, ax_pedaling) = axes
-    # not speed, hr, not cad
-    # 0, 1, 0
-    elif not args.plot_speed and (args.plot_heart_rate and heart_rates) and not (args.plot_cadence and cadences):
-        rows = 2
-        # noinspection PyTypeChecker
-        (fig, axes) = plt.subplots(rows, 1, sharex=True)
-        (ax_elevation, ax_hr) = axes
-    # not speed, not hr, cad
-    # 0, 0, 1
-    elif not args.plot_speed and not (args.plot_heart_rate and heart_rates) and args.plot_cadence:
-        rows = 2
-        # noinspection PyTypeChecker
-        (fig, axes) = plt.subplots(rows, 1, sharex=True)
-        (ax_elevation, ax_pedaling) = axes
-    # not speed, not hr, not cad
-    # 0, 0, 0
-    else:
-        rows = 1
-        # noinspection PyTypeChecker
-        (fig, axes) = plt.subplots(rows, 1, sharex=True)
-        ax_elevation = axes
+    ax_pedaling = None
+
+    fig = plt.figure()
+    ax_elevation = fig.add_subplot(1, 1, 1)
+
+    if args.plot_speed:
+        ax_speed = add_subplot(fig)
+
+    if args.plot_heart_rate and heart_rates:
+        ax_hr = add_subplot(fig)
+
+    if args.plot_cadence and cadences:
+        ax_pedaling = add_subplot(fig)
+
     return (fig, (ax_elevation, ax_speed, ax_hr, ax_pedaling))
 
 
@@ -370,7 +337,6 @@ def main():
     elevation_lines = collections.LineCollection(elevation_segments, cmap=colour_map)
     elevation_lines.set_array(gradient_clipped)
     ax_elevation.add_collection(elevation_lines)
-    # line = ax_e...
     # TODO: f.colorbar(line, ax=ax_elevation)
 
     # do this to align the y-axes
@@ -387,6 +353,7 @@ def main():
     ax_elevation.set_ylim(0, elevation_ymax)  # max(data["elevations"])*(1 + _PLOT_PADDING))
     ax_elevation.set_ylabel("m", fontsize=_FONT_SIZE)
     ax_elevation.tick_params(labelsize=_FONT_SIZE)
+    ax_elevation.set_xticklabels([])
     ax_elevation.grid()
 
     ax_grade = ax_elevation.twinx()
@@ -397,10 +364,10 @@ def main():
     ax_grade.plot(data["cumulative_distances"][:-1], np.array(metrics["grades"]), color=orange, alpha=0.7, label="Stepped Grade")
     ax_grade.set_ylabel("%", fontsize=_FONT_SIZE)
     ax_grade.tick_params(labelsize=_FONT_SIZE)
+    ax_grade.set_xticklabels([])
     ax_grade.axhline(y=0, color=orange, alpha=0.5, linestyle="--", linewidth=0.5)
     ax_grade.grid()
 
-    # h1, l1 = ax_elevation.get_legend_handles_labels()
     handles_ax_grade, legend_ax_grade = ax_grade.get_legend_handles_labels()
     # https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
     ax_grade.legend(handles_ax_grade, legend_ax_grade, loc="upper right", fontsize=_FONT_SIZE)
@@ -415,6 +382,7 @@ def main():
         ax_speed.set_ylim(0, max(data["speed"])*(1 + _PLOT_PADDING))
         ax_speed.legend(loc="upper right", fontsize=_FONT_SIZE)
         ax_speed.tick_params(labelsize=_FONT_SIZE)
+        ax_speed.set_xticklabels([])
         ax_speed.grid()
 
     if ax_hr:
@@ -426,38 +394,35 @@ def main():
         ax_hr.set_ylabel("BPM", fontsize=_FONT_SIZE)
         ax_hr.legend(loc="upper right", fontsize=_FONT_SIZE)
         ax_hr.tick_params(labelsize=_FONT_SIZE)
+        ax_hr.set_xticklabels([])
         ax_hr.grid()
 
     if ax_pedaling:
         ax_pedaling.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
         cadence_percentages = np.array(metrics["cadence_percentages"])*100
         ax_pedaling.plot(data["cumulative_distances"][:-1], cadence_percentages, color=purple, label="Percentage Pedaling")
-        # grades_max = np.ceil(max([abs(g) for g in metrics["grades"]]))
         # make symmetric
         ax_pedaling.set_ylim(0, max(data["cadences"])*(1 + _PLOT_PADDING))
-        # ax_pedaling.set_ylim(min(cadence_percentages)*(1 - _PLOT_PADDING), max(cadence_percentages)*(1 + _PLOT_PADDING))
-        # ax_grade.plot(data["cumulative_distances"][:-1], np.array(metrics["grades"]), color=orange, alpha=0.7, label="Stepped Grade")
         ax_pedaling.set_ylabel("%", fontsize=_FONT_SIZE)
         ax_pedaling.tick_params(labelsize=_FONT_SIZE)
+        ax_pedaling.set_xticklabels([])
         ax_pedaling.grid()
 
         ax_cadence = ax_pedaling.twinx()
         ax_cadence.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
-        # ax_cadence.set_ylim(min(cadence_averages)*(1 - _PLOT_PADDING), max(cadence_averages)*(1 + _PLOT_PADDING))
-        # ax_cadence.plot(cumulative_distances[:-1], np.array(cadence_averages), color=purple, label="Average Cadence")
-        # ax_cadence.plot(data["cumulative_distances"][:-1], np.array(metrics["cadence_percentages"])*100, color=purple, label="Percentage Pedaling")
         ax_cadence.plot(data["cumulative_distances"][:-1], data["cadences"][:-2], color=purple, alpha=0.3, label="Cadence")
         ax_cadence.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
         ax_cadence.set_ylabel("RPM", fontsize=_FONT_SIZE)
         ax_cadence.set_ylim(0, max(data["cadences"])*(1 + _PLOT_PADDING))
-        # ax_cadence.legend(loc="upper right", fontsize=_FONT_SIZE)
         ax_cadence.tick_params(labelsize=_FONT_SIZE)
+        ax_cadence.set_xticklabels([])
         ax_cadence.grid()
 
         handles_ax_cadence, legend_ax_cadence = ax_cadence.get_legend_handles_labels()
         handles_ax_pedaling, legend_ax_pedaling = ax_pedaling.get_legend_handles_labels()
         ax_pedaling.legend(handles_ax_pedaling + handles_ax_cadence, legend_ax_pedaling + legend_ax_cadence, loc="upper right", fontsize=_FONT_SIZE)
 
+    fig.axes[-1].xaxis.set_major_formatter(ticker.ScalarFormatter())
     fig.align_ylabels(axes)
 
     if track.name:

@@ -1,11 +1,11 @@
 #!/bin/bash
-echo "Checking style..."
+echo "Checking style ..."
 ./style.sh
-echo "Checking doc strings..."
+echo "Checking doc strings ..."
 ./docs.sh
-echo "Linting..."
+echo "Linting ..."
 ./lint.sh
-echo "Checking code complexity..."
+echo "Checking code complexity ..."
 ./cc.sh
-echo "Checking code duplication..."
+echo "Checking code duplication ..."
 ./cpd.sh

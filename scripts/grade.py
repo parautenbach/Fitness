@@ -426,20 +426,16 @@ def main():
     axes = tuple([a for a in (ax_elevation, ax_speed, ax_hr, ax_pedaling) if a])
 
     plot_elevation(ax_elevation, data["cumulative_distances"], data["elevations"], elevations_filtered, gradient, summary, green, [yellow, orange, red])
-
     ax_grade = ax_elevation.twinx()
     plot_grades(ax_grade, data["cumulative_distances"], metrics["grades"], orange)
-
     handles_ax_grade, legend_ax_grade = ax_grade.get_legend_handles_labels()
     # https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
     ax_grade.legend(handles_ax_grade, legend_ax_grade, loc="upper right", fontsize=_FONT_SIZE)
 
     if ax_speed:
         plot_speed(ax_speed, data["cumulative_distances"], metrics["speed_averages"], data["speed"], cyan)
-
     if ax_hr:
         plot_hr(ax_hr, data["cumulative_distances"], metrics["heart_rate_averages"], data["heart_rates"], red)
-
     if ax_pedaling:
         plot_pedaling(ax_pedaling, data["cumulative_distances"], metrics["cadence_percentages"], data["cadences"], purple)
 

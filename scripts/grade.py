@@ -198,7 +198,7 @@ def calculate_summary(data, metrics):
 def print_summary(summary):
     """Print summary data to the console."""
     print("\nSummary statistics:")
-    if summary["overall_pedaling_fraction"]:
+    if "overall_pedaling_fraction" in summary:
         print("  Overall pedaling percentage was {pp:.1%} at an average of {nzc} RPM".format(pp=summary["overall_pedaling_fraction"],
                                                                                              nzc=summary["cadence_average_non_zero"]))
         print()

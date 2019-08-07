@@ -273,6 +273,35 @@ def mark_section_highlights(axis, distances, elevations, summary, colour):
             axis.fill_between(distances[start:end], elevations[start:end], 0, color=colour, alpha=0.8)
 
 
+def set_common_plot_options(axis, distances):
+    """Set plot options common to all axes."""
+    axis.set_xlim(min(distances), max(distances))
+    axis.legend(loc="upper right", fontsize=_FONT_SIZE)
+    axis.tick_params(labelsize=_FONT_SIZE)
+    axis.set_xticklabels([])
+    axis.grid()
+
+
+def plot_speed(axis, distances, speed_averages, speed, colour):
+    """Plot speed data."""
+    axis.plot(distances[:-1], np.array(speed_averages), color=colour, label="Average Speed")
+    axis.plot(distances[:-1], speed[:-1], color=colour, alpha=0.3, label="Speed")
+    axis.set_ylim(0, max(speed) * (1 + _PLOT_PADDING))
+    axis.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
+    axis.set_ylabel("km/h", fontsize=_FONT_SIZE)
+    set_common_plot_options(axis, distances)
+
+
+def plot_hr(axis, distances, heart_rate_averages, heart_rates, colour):
+    """Plot heart rate data."""
+    axis.plot(distances[:-1], np.array(heart_rate_averages), color=colour, label="Average Heart Rate")
+    axis.plot(distances[:-1], heart_rates[:-2], color=colour, alpha=0.3, label="Heart Rate")
+    axis.set_ylim(min(heart_rate_averages) * (1 - _PLOT_PADDING), max(heart_rate_averages) * (1 + _PLOT_PADDING))
+    axis.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
+    axis.set_ylabel("BPM", fontsize=_FONT_SIZE)
+    set_common_plot_options(axis, distances)
+
+
 def main():
     """Run the main programme."""
     # TODO: specify time x-axis
@@ -376,29 +405,10 @@ def main():
     ax_grade.legend(handles_ax_grade, legend_ax_grade, loc="upper right", fontsize=_FONT_SIZE)
 
     if ax_speed:
-        ax_speed.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
-        ax_speed.set_ylim(min(metrics["speed_averages"])*(1 - _PLOT_PADDING), max(metrics["speed_averages"])*(1 + _PLOT_PADDING))
-        ax_speed.plot(data["cumulative_distances"][:-1], np.array(metrics["speed_averages"]), color=cyan, label="Average Speed")
-        ax_speed.plot(data["cumulative_distances"][:-1], data["speed"][:-1], color=cyan, alpha=0.3, label="Speed")
-        ax_speed.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
-        ax_speed.set_ylabel("km/h", fontsize=_FONT_SIZE)
-        ax_speed.set_ylim(0, max(data["speed"])*(1 + _PLOT_PADDING))
-        ax_speed.legend(loc="upper right", fontsize=_FONT_SIZE)
-        ax_speed.tick_params(labelsize=_FONT_SIZE)
-        ax_speed.set_xticklabels([])
-        ax_speed.grid()
+        plot_speed(ax_speed, data["cumulative_distances"], metrics["speed_averages"], data["speed"], cyan)
 
     if ax_hr:
-        ax_hr.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))
-        ax_hr.set_ylim(min(metrics["heart_rate_averages"])*(1 - _PLOT_PADDING), max(metrics["heart_rate_averages"])*(1 + _PLOT_PADDING))
-        ax_hr.plot(data["cumulative_distances"][:-1], np.array(metrics["heart_rate_averages"]), color=red, label="Average Heart Rate")
-        ax_hr.plot(data["cumulative_distances"][:-1], data["heart_rates"][:-2], color=red, alpha=0.3, label="Heart Rate")
-        ax_hr.set_xlabel("Distance (km)", fontsize=_FONT_SIZE)
-        ax_hr.set_ylabel("BPM", fontsize=_FONT_SIZE)
-        ax_hr.legend(loc="upper right", fontsize=_FONT_SIZE)
-        ax_hr.tick_params(labelsize=_FONT_SIZE)
-        ax_hr.set_xticklabels([])
-        ax_hr.grid()
+        plot_hr(ax_hr, data["cumulative_distances"], metrics["heart_rate_averages"], data["heart_rates"], red)
 
     if ax_pedaling:
         ax_pedaling.set_xlim(min(data["cumulative_distances"]), max(data["cumulative_distances"]))

@@ -322,18 +322,18 @@ def plot_pedaling(ax_pedaling, distances, cadence_percentages, cadences, colour)
     ax_cadence.legend(handles_ax_pedaling + handles_ax_cadence, legend_ax_pedaling + legend_ax_cadence, loc="upper right", fontsize=_FONT_SIZE)
 
 
-def plot_elevation(ax_elevation, distances, elevations, elevations_filtered, gradient, summary, colour, colour_range):
+def plot_elevation(axis, distances, elevations, elevations_filtered, gradient, summary, colour, colour_range):
     """Plot elevation data."""
     # TODO: gradients
-    ax_elevation.fill_between(distances, elevations, 0, color=colour, alpha=0.5)
-    mark_section_highlights(ax_elevation, distances, elevations, summary, colour)
+    axis.fill_between(distances, elevations, 0, color=colour, alpha=0.5)
+    mark_section_highlights(axis, distances, elevations, summary, colour)
     # calculate the smoothed gradients and create a colour map for it
     gradient_abs = np.abs(gradient)
     # first stretch the data to be in the range [0,1]
     gradient_normalised = gradient_abs/gradient_abs.max()
     gradient_clipped = np.clip(gradient_normalised, 0, _GRADIENT_CLIPPING_FACTOR)/_GRADIENT_CLIPPING_FACTOR
     colour_map = colors.ListedColormap(sns.color_palette(colour_range).as_hex())
-    ax_elevation.scatter(distances[:-1], elevations_filtered[:-1], c=colour_map(gradient_clipped), s=0.1, edgecolor=None)
+    axis.scatter(distances[:-1], elevations_filtered[:-1], c=colour_map(gradient_clipped), s=0.1, edgecolor=None)
 
     # plot the smoothed elevations, coloured according to the smoothed gradient
     # https://matplotlib.org/3.1.0/gallery/lines_bars_and_markers/multicolored_line.html
@@ -341,7 +341,7 @@ def plot_elevation(ax_elevation, distances, elevations, elevations_filtered, gra
     elevation_segments = np.concatenate([elevation_points[:-1], elevation_points[1:]], axis=1)
     elevation_lines = collections.LineCollection(elevation_segments, cmap=colour_map)
     elevation_lines.set_array(gradient_clipped)
-    ax_elevation.add_collection(elevation_lines)
+    axis.add_collection(elevation_lines)
     # TODO: f.colorbar(line, ax=ax_elevation)
 
     # do this to align the y-axes
@@ -351,10 +351,10 @@ def plot_elevation(ax_elevation, distances, elevations, elevations_filtered, gra
         elevation_ymax = np.ceil(max(elevations) / 200) * 200
     else:
         elevation_ymax = np.ceil(max(elevations) / 20) * 20
-    ax_elevation.set_ylim(0, elevation_ymax)
-    ax_elevation.set_ylabel("m", fontsize=_FONT_SIZE)
+    axis.set_ylim(0, elevation_ymax)
+    axis.set_ylabel("m", fontsize=_FONT_SIZE)
 
-    set_common_plot_options(ax_elevation, distances, legend=False)
+    set_common_plot_options(axis, distances, legend=False)
 
 
 def plot_grades(axis, distances, grades, colour):

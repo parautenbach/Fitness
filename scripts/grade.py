@@ -442,7 +442,7 @@ def main():
 
         handles_ax_cadence, legend_ax_cadence = ax_cadence.get_legend_handles_labels()
         handles_ax_pedaling, legend_ax_pedaling = ax_pedaling.get_legend_handles_labels()
-        ax_pedaling.legend(handles_ax_pedaling + handles_ax_cadence, legend_ax_pedaling + legend_ax_cadence, loc="upper right", fontsize=_FONT_SIZE)
+        ax_cadence.legend(handles_ax_pedaling + handles_ax_cadence, legend_ax_pedaling + legend_ax_cadence, loc="upper right", fontsize=_FONT_SIZE)
 
     fig.axes[-1].xaxis.set_major_formatter(ticker.ScalarFormatter())
     fig.align_ylabels(axes)

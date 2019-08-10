@@ -7,6 +7,7 @@ import os.path
 import sys
 import warnings
 from argparse import ArgumentParser
+from datetime import datetime
 
 import gpxpy
 import gpxpy.gpx
@@ -17,6 +18,7 @@ import scipy.signal as signal
 import seaborn as sns
 
 from haversine import haversine
+from tzlocal import get_localzone
 
 _GPX_HR_TAG = "hr"
 _GPX_CADENCE_TAG = "cad"
@@ -461,8 +463,10 @@ def main():
     fig.align_ylabels(axes)
 
     if track.name:
-        # TODO: add time
-        fig.suptitle("{name} on {date}".format(name=track.name.strip(), date=track.get_time_bounds().start_time.date()))
+        # https://stackoverflow.com/questions/1111317/how-do-i-print-a-python-datetime-in-the-local-timezone
+        # assume the gpx time is always UTC
+        start_time = track.get_time_bounds().start_time.astimezone(get_localzone())
+        fig.suptitle("{name} on {date} at {time}".format(name=track.name.strip(), date=start_time.date(), time=start_time.time().strftime("%H:%M")))
 
     save_figure(fig, args)
 

@@ -467,6 +467,7 @@ def main():
         # assume the gpx time is always UTC
         start_time = track.get_time_bounds().start_time.astimezone(get_localzone())
         fig.suptitle("{name} on {date} at {time}".format(name=track.name.strip(), date=start_time.date(), time=start_time.time().strftime("%H:%M")))
+        # https://stackoverflow.com/questions/2507726/how-to-display-locale-sensitive-time-format-without-seconds-in-python
         # fig.suptitle("{name} on {date} at {time}".format(name=track.name.strip(), date=start_time.date().strftime("%x"), time=start_time.time().strftime("%X")))
 
     save_figure(fig, args)

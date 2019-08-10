@@ -4,6 +4,7 @@
 """Calculate a number of metrics and draw plots of those, e.g. more interesting and useful grade plots."""
 
 import os.path
+import sys
 import warnings
 from argparse import ArgumentParser
 
@@ -38,7 +39,10 @@ def setup_argparser():
     """Set up the command-line argument parser."""
     parser = ArgumentParser(description="Generate a smoothed elevation plot (PNG) using a colour gradient \
                                          and stepped grades to show general climbs and downhills.")
-    parser.add_argument("-f", "--file", required=True, dest="filename", help="the GPX file to generate the plot for", metavar="FILE")
+    # positional
+    parser.add_argument("filename", help="the GPX file to generate the plot for", metavar="filename")
+    # optional
+    parser.add_argument("-a", "--all", dest="plot_all", action="store_true", help="generate plots for all available and supported data and show the stats summary")
     parser.add_argument("-hr", "--heart-rate", dest="plot_heart_rate", action="store_true", help="generate a heart rate plot too")
     parser.add_argument("-s", "--speed", dest="plot_speed", action="store_true", help="generate a speed plot too")
     parser.add_argument("-c", "--cadence", dest="plot_cadence", action="store_true", help="generate a cadence plot too")
@@ -393,6 +397,12 @@ def main():
     parser = setup_argparser()
     args = parser.parse_args()
 
+    if args.plot_all:
+        args.plot_heart_rate = True
+        args.plot_speed = True
+        args.plot_cadence = True
+        args.show_summary = True
+
     gpx = get_gpx(args.filename, args.quiet)
     (track, data) = parse_gpx(gpx)
 
@@ -417,9 +427,9 @@ def main():
     if not args.quiet:
         print("Plotting")
         if args.plot_heart_rate and not data["heart_rates"]:
-            print("WARNING: Heart rate plot requested but no heart rate data could be found")
+            print("WARNING: Heart rate plot requested but no heart rate data could be found", file=sys.stderr)
         if args.plot_cadence and not data["cadences"]:
-            print("WARNING: Cadence plot requested but no cadence data could be found")
+            print("WARNING: Cadence plot requested but no cadence data could be found", file=sys.stderr)
 
     # https://www.codecademy.com/articles/seaborn-design-i
     sns.set_style(style="ticks", rc={"grid.linestyle": "--"})
@@ -468,7 +478,7 @@ def main():
         print_summary(summary)
 
     # TODO: Test with Jupyter
-    # TODO: --all option, --cut-off option, --html
+    # TODO: --cut-off option, --html
     # TODO: gradient plot
     # https://realpython.com/python-code-quality/
 

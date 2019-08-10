@@ -43,7 +43,8 @@ def setup_argparser():
     # positional
     parser.add_argument("filename", help="the GPX file to generate the plot for", metavar="filename")
     # optional
-    parser.add_argument("-a", "--all", dest="plot_all", action="store_true", help="generate plots for all available and supported data and show the stats summary")
+    parser.add_argument("-a", "--all", dest="plot_all", action="store_true",
+                        help="generate plots for all available and supported data and show the stats summary")
     parser.add_argument("-hr", "--heart-rate", dest="plot_heart_rate", action="store_true", help="generate a heart rate plot too")
     parser.add_argument("-s", "--speed", dest="plot_speed", action="store_true", help="generate a speed plot too")
     parser.add_argument("-c", "--cadence", dest="plot_cadence", action="store_true", help="generate a cadence plot too")
@@ -467,7 +468,9 @@ def main():
         start_time = track.get_time_bounds().start_time.astimezone(get_localzone())
         fig.suptitle("{name} on {date} at {time}".format(name=track.name.strip(), date=start_time.date(), time=start_time.time().strftime("%H:%M")))
         # https://stackoverflow.com/questions/2507726/how-to-display-locale-sensitive-time-format-without-seconds-in-python
-        # fig.suptitle("{name} on {date} at {time}".format(name=track.name.strip(), date=start_time.date().strftime("%x"), time=start_time.time().strftime("%X")))
+        # fig.suptitle("{name} on {date} at {time}".format(name=track.name.strip(),
+        #                                                  date=start_time.date().strftime("%x"),
+        #                                                  time=start_time.time().strftime("%X")))
 
     save_figure(fig, args)
 

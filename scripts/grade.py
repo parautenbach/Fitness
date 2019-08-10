@@ -7,7 +7,6 @@ import os.path
 import sys
 import warnings
 from argparse import ArgumentParser
-from datetime import datetime
 
 import gpxpy
 import gpxpy.gpx

@@ -351,7 +351,6 @@ def get_elevation_ylim(elevations):
 
 def plot_elevation(axis, distances, elevations, elevations_filtered, gradient, summary, colour, colour_range):  # pylint: disable=too-many-arguments
     """Plot elevation data."""
-    # TODO: gradients
     axis.fill_between(distances, elevations, 0, color=colour, alpha=0.5)
     mark_section_highlights(axis, distances, elevations, summary, colour)
     # calculate the smoothed gradients and create a colour map for it
@@ -392,8 +391,6 @@ def save_figure(fig, args):
 
 def main():
     """Run the main programme."""
-    # TODO: specify time x-axis
-    # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
     parser = setup_argparser()
     args = parser.parse_args()
 
@@ -464,7 +461,7 @@ def main():
     fig.align_ylabels(axes)
 
     if track.name:
-        # TODO: time
+        # TODO: add time
         fig.suptitle("{name} on {date}".format(name=track.name.strip(), date=track.get_time_bounds().start_time.date()))
 
     save_figure(fig, args)
@@ -480,6 +477,8 @@ def main():
     # TODO: Test with Jupyter
     # TODO: --cut-off option, --html
     # TODO: gradient plot
+    # TODO: specify time x-axis / space axis according to time
+    # https://stackoverflow.com/questions/1574088/plotting-time-in-python-with-matplotlib
     # https://realpython.com/python-code-quality/
 
 

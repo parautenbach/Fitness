@@ -6,7 +6,7 @@
 import os.path
 import sys
 import warnings
-from argparse import ArgumentParser
+from argparse import ArgumentParser, HelpFormatter
 
 import gpxpy
 import gpxpy.gpx
@@ -38,8 +38,12 @@ _GRADIENT_CLIPPING_FACTOR = 3/10
 
 def setup_argparser():
     """Set up the command-line argument parser."""
-    parser = ArgumentParser(description="Generate a smoothed elevation plot (PNG) using a colour gradient \
-                                         and stepped grades to show general climbs and downhills.")
+    # https://stackoverflow.com/questions/5462873/control-formatting-of-the-argparse-help-argument-list
+    # setting the width voids whatever os.environ['COLUMNS'] would be set to
+    parser = ArgumentParser(prog=os.path.basename(__file__),
+                            description="Generate a smoothed elevation plot (PNG) using a colour gradient \
+                                         and stepped grades to show general climbs and downhills.",
+                            formatter_class=lambda prog: HelpFormatter(prog, max_help_position=40, width=160))
     # positional
     parser.add_argument("filename", help="the GPX file to generate the plot for", metavar="filename")
     # optional
@@ -51,6 +55,7 @@ def setup_argparser():
     parser.add_argument("-i", "--interactive", dest="interactive_plot", action="store_true",
                         help="open an interactive plot window besides saving the plot to file")
     parser.add_argument("-ss", "--summary", dest="show_summary", action="store_true", help="print some summary statistics for the workout")
+    parser.add_argument("-f", "--format", dest="output_format", choices=["png", "html"], default="png", help="the format of the generated plot")
     parser.add_argument("-q", "--quiet", dest="quiet", action="store_true", help="run in quiet mode")
     return parser
 
@@ -384,11 +389,20 @@ def plot_grades(axis, distances, grades, colour):
 
 def save_figure(fig, args):
     """Save the figure to disk."""
+    # TODO: figure.set_tight_layout(True)
+    # TODO: svg
     (input_basename, _) = os.path.splitext(os.path.basename(args.filename))
-    output_filename = ".".join([input_basename, "png"])
+    output_filename = ".".join([input_basename, args.output_format])
     if not args.quiet:
         print("Saving plot to {filename}".format(filename=os.path.abspath(output_filename)))
-    fig.savefig(output_filename, dpi=_PLOT_DPI)
+    if args.output_format == "html":
+        # with open(output_filename, "wb") as f:
+        # mpld3.save_html(fig, f)
+        # html = mpld3.fig_to_html(fig)
+        # print(html)
+        raise NotImplementedError()
+    else:
+        fig.savefig(output_filename, dpi=_PLOT_DPI)
 
 
 def main():
